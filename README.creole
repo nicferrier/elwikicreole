@@ -1,6 +1,24 @@
 This is a [[http://www.wikicreole.org/|WikiCreole]] parser in
 [[http://www.emacswiki.org/emacs/EmacsLisp|EmacsLisp]].
 
+== Rationale ==
+
+We have [[http://www.emacswiki.org/emacs/EmacsMuse|Emacs Muse]] and we
+have [[http://www.emacswiki.org/emacs/OrgMode|OrgMode]] as wiki/blog
+makers but neither is close to the Creole syntax which is actually the
+syntax used on the [[http://EmacsWiki.org|EmacsWiki]].
+
+WikiCreole is closest to the OddMuse syntax used there. It also
+happens to be my favorite Wiki syntax.
+
+The combination of this and
+[[http://emacswiki.org/wiki/Elnode|Elnode]] should make a complete
+EmacsLisp EmacsWiki a possibility. Also a blog engine and all sorts of
+other simple content based things.
+
+I even like the idea of using WikiCreole as a kind of base language
+for every HTML template I write, rather than HTML.
+
 == Compliance ==
 
 This is early stages so it's not fully compliant with WikiCreole
