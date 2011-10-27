@@ -397,7 +397,7 @@ that runs over several lines")
         (ul "and a list item stops it")
         (para . "This is a paragraph {{{with code}}} and [[links]]"))))))
 
-(defun creole--export-html-list (type lst)
+(defun creole--html-list (type lst)
   "Export the specified LST in HTML.
 
 The exported HTML is written into the current buffer. 
@@ -409,7 +409,7 @@ This is NOT intended to be used by anything but 'creole-export-html'."
           do (progn
                (cond
                 ((listp item)
-                 (creole--export-html-list (car item) (cdr item))
+                 (creole--html-list (car item) (cdr item))
                  (setq first nil))
                 (t
                  (if (not first)
@@ -420,10 +420,10 @@ This is NOT intended to be used by anything but 'creole-export-html'."
     (insert "</li>\n")
     (insert "</" (symbol-name type) ">\n")))
 
-(ert-deftest creole--export-html-list ()
+(ert-deftest creole--html-list ()
   "Test the list export, which is a little complex."
   (with-temp-buffer
-    (creole--export-html-list 
+    (creole--html-list 
      'ul 
      '("this is a list" 
        (ul "with a deeper list") 
@@ -438,40 +438,78 @@ This is NOT intended to be used by anything but 'creole-export-html'."
 </ul>
 "))))
 
-(defun creole-export-html (docbuf)
-  "Export DOCBUF as HTML."
-  (let ((creole (creole-structure (creole-tokenize docbuf))))
-    (with-current-buffer (get-buffer-create "*creolehtml*")
-      (erase-buffer)
-      (loop for element in creole
-            do 
-            (let ((syntax (car element)))
-              (case syntax
-                ;; The list elements can follow on from each other and require special handling
-                ((ul ol)
-                 (creole--export-html-list syntax (cdr element))
-                 )
-                (heading1
-                 (insert (format "<h1>%s</h1>\n" (cdr element))))
-                (heading2
-                 (insert (format "<h2>%s</h2>\n" (cdr element))))
-                (heading3
-                 (insert (format "<h3>%s</h3>\n" (cdr element))))
-                (preformatted
-                 (insert (format "<pre>\n%s\n</pre>\n" (cdr element))))
-                (hr
-                 (insert "<hr/>\n"))
-                (para
-                 (insert (format "<p>%s</p>\n"
-                                 (creole-block-parse (cdr element))))))))
-      (current-buffer))))
+(defun* creole-html (docbuf 
+                     &optional html-buffer 
+                     &key result-mode
+                     (erase-existing t)
+                     switch-to)
+  "Export DOCBUF as HTML to HTML-BUFFER.
+
+If HTML-BUFFER does not exist then a buffer is created based on
+the name of DOCBUF. If DOCBUF doesn't have a name then the
+destination buffer is called:
+
+ *creolehtml*
+
+If RESULT-MODE is specified then the HTML-BUFFER is placed in
+that mode.
+
+If ERASE-EXISTING is not nil then any existing content in the
+HTML-BUFFER is erased before rendering.  By default this is true.
+
+If SWITCH-TO is not nil then the HTML-BUFFER is switched to when
+the export is done.
+
+When called interactively RESULT-MODE is set to 'html-mode',
+ERASE-EXISTING is set to true and SWITCH-TO is set to true.
+
+Returns the HTML-BUFFER."
+  (interactive (list
+                (read-buffer "Creole buffer: " (current-buffer))
+                nil
+                :result-mode 'html-mode
+                :switch-to 't))
+  (let ((result-buffer ; make up the result buffer
+         (or html-buffer 
+             (get-buffer-create 
+              (replace-regexp-in-string 
+               "\\(\\**\\)\\(.*\\)\\(\\**\\)"
+               "*creolehtml-\\1*"
+               (buffer-name (if (bufferp docbuf) docbuf (get-buffer docbuf))))))))
+    (let ((creole (creole-structure (creole-tokenize docbuf))))  ; Get the parsed creole doc
+      (with-current-buffer result-buffer
+        (if erase-existing (erase-buffer)) ; Erase if we were asked to
+        (loop for element in creole
+              do 
+              (let ((syntax (car element)))
+                (case syntax
+                  ;; The list elements can follow on from each other and require special handling
+                  ((ul ol)
+                   ;; FIXME lists don't do block level replacement yet!
+                   (creole--html-list syntax (cdr element)))
+                  (heading1
+                   (insert (format "<h1>%s</h1>\n" (cdr element))))
+                  (heading2
+                   (insert (format "<h2>%s</h2>\n" (cdr element))))
+                  (heading3
+                   (insert (format "<h3>%s</h3>\n" (cdr element))))
+                  (preformatted
+                   (insert (format "<pre>\n%s\n</pre>\n" (cdr element))))
+                  (hr
+                   (insert "<hr/>\n"))
+                  (para
+                   (insert (format "<p>%s</p>\n"
+                                   (creole-block-parse (cdr element))))))))
+        (if result-mode (call-interactively result-mode)))
+      (if switch-to (switch-to-buffer result-buffer))
+      result-buffer)))
 
 (ert-deftest creole-list-export ()
   "Test lists (which are a little complicated) export correctly."
   (with-temp-buffer
     (insert "* list item
 ** 2nd list item")
-    (let ((html (creole-export-html (current-buffer))))
+    (let ((html (creole-html (current-buffer))))
       (with-current-buffer html
         (goto-char (point-min))
         (should (looking-at "<ul>
@@ -482,18 +520,11 @@ This is NOT intended to be used by anything but 'creole-export-html'."
 </ul>
 "))))))
 
-(defun creole-to-html (docbuf)
-  "Export the specified DOCBUF as HTML.
-
-DOCBUF can be specified."
-  (interactive "bBuffer: ")
-  (switch-to-buffer (creole-export-html docbuf)))
-
 (ert-deftest creole-export ()
   "Test the HTML export end to end."
   (with-temp-buffer
     (creole--test-doc (current-buffer))
-    (let ((html (creole-export-html (current-buffer))))
+    (let ((html (creole-html (current-buffer))))
       (with-current-buffer html
         (goto-char (point-min))
         (should (looking-at "<h1>Heading!</h1>
