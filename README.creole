@@ -1,10 +1,10 @@
 This is a [[http://www.wikicreole.org/|WikiCreole]] parser in
-[http://www.emacswiki.org/emacs/EmacsLisp|EmacsLisp]].
+[[http://www.emacswiki.org/emacs/EmacsLisp|EmacsLisp]].
 
 == Compliance ==
 
 This is early stages so it's not fully compliant with WikiCreole
-yet. Here is the [http://www.wikicreole.org/attach/Creole1.0TestCases/creole1.0test.txt|WikiCreole test document]] 
+yet. Here is the [[http://www.wikicreole.org/attach/Creole1.0TestCases/creole1.0test.txt|WikiCreole test document]] 
 and we don't handle some big things and all of what I'd call the exceptions:
 
 * not ending headings with an appropriate {{{=}}}
