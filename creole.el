@@ -320,6 +320,11 @@ For example:
     result))
 
 (ert-deftest creole-structure ()
+  "Testing tokenize lists to parsed representations.
+
+The test here takes a list that would come from 'creole-tokenize'
+and checks it against what should come out of 'creole-structure'.
+In other words, a parsed creole document representation."
   (should 
    (equal
     (creole-structure 
@@ -351,6 +356,10 @@ For example:
        "this is another return to first level item")))))
 
 (ert-deftest creole-structure-end-to-end ()
+  "Test the parser directly with the result of the tokenizer.
+
+'creole-tokenize' is called on a buffer and checked against what
+should come out."
   (with-temp-buffer
     (insert "= this is a heading! =\n")
     (insert "* this is a first item\n")
@@ -458,6 +467,7 @@ This is NOT intended to be used by anything but 'creole-export-html'."
       (current-buffer))))
 
 (ert-deftest creole-list-export ()
+  "Test lists (which are a little complicated) export correctly."
   (with-temp-buffer
     (insert "* list item
 ** 2nd list item")
@@ -480,6 +490,7 @@ DOCBUF can be specified."
   (switch-to-buffer (creole-export-html docbuf)))
 
 (ert-deftest creole-export ()
+  "Test the HTML export end to end."
   (with-temp-buffer
     (creole--test-doc (current-buffer))
     (let ((html (creole-export-html (current-buffer))))
