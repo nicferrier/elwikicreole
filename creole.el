@@ -2,6 +2,12 @@
 
 ;;; Copyright (C) 2011 by Nic Ferrier
 
+;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
+;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
+;; Created: 27th October 2011
+;; Version: 0.1
+;; Keywords: lisp, creole, wiki
+
 ;;; Commentary:
 
 ;; This is a WikiCreole wiki parser. WikiCreole is something like the
