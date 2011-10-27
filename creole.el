@@ -504,7 +504,7 @@ Returns the HTML-BUFFER."
       (if switch-to (switch-to-buffer result-buffer))
       result-buffer)))
 
-(ert-deftest creole-list-export ()
+(ert-deftest creole-list-to-html ()
   "Test lists (which are a little complicated) export correctly."
   (with-temp-buffer
     (insert "* list item
@@ -520,7 +520,7 @@ Returns the HTML-BUFFER."
 </ul>
 "))))))
 
-(ert-deftest creole-export ()
+(ert-deftest creole-html ()
   "Test the HTML export end to end."
   (with-temp-buffer
     (creole--test-doc (current-buffer))
