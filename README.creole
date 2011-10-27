@@ -44,7 +44,7 @@ The code is designed to be reused in differing circumstances, it is split into:
 ** Inline markup inside a paragraph is NOT converted.
 * a //parser// {{{creole-structure}}} which takes a tokenizer list and returns a parsed representation
 ** note it's only creole lists that need this //parsing// step
-* an HTML exporter {{{creole-export-html}}} which outputs HTML from a WikiCreole source buffer
+* an HTML exporter {{{creole-html}}} which outputs HTML from a WikiCreole source buffer
 ** it always outputs to the same buffer right now, obviously changes coming here
-* an HTML export command {{{creole-to-html}}} which is an interactive {{{creole-export-html}}}
+** it also has an interactive output option
 
