@@ -281,7 +281,7 @@ For example:
       (when (string-match "\\([uo]l\\)\\([0-9]+\\)" s)
         (cons
          (intern (match-string 1 s))
-         (string-to-int (match-string 2 s)))))))
+         (string-to-number (match-string 2 s)))))))
 
 (ert-deftest creole--list-item ()
   "Test the little creole list item function."
@@ -524,6 +524,13 @@ Returns the HTML-BUFFER."
         (if result-mode (call-interactively result-mode)))
       (if switch-to (switch-to-buffer result-buffer))
       result-buffer)))
+
+(defun creole-wiki (filename)
+  "Send the the creole filename as HTML to the stdout."
+  (interactive "fCreole file: ")
+  (let ((buffer (find-file-noselect filename)))
+    (with-current-buffer (creole-html buffer)
+      (print (buffer-substring (point-min)(point-max))))))
 
 (ert-deftest creole-list-to-html ()
   "Test lists (which are a little complicated) export correctly."
