@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.2
+;; Version: 0.3
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -33,6 +33,8 @@
 ;; http://www.wikicreole.org/wiki/Creole1.0
 
 ;;; Code:
+
+(require 'ert)
 
 (defun creole-link-parse (text)
   "Parse TEXT for creole links.
@@ -530,7 +532,7 @@ Returns the HTML-BUFFER."
   (interactive "fCreole file: ")
   (let ((buffer (find-file-noselect filename)))
     (with-current-buffer (creole-html buffer)
-      (print (buffer-substring (point-min)(point-max))))))
+      (princ (buffer-substring (point-min)(point-max))))))
 
 (ert-deftest creole-list-to-html ()
   "Test lists (which are a little complicated) export correctly."
