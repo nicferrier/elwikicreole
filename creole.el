@@ -43,22 +43,22 @@ In the future we need to have some sort of resolution system here?
 
 Possibly it would be good to orthongonaly update some list of
 links."
-  (replace-regexp-in-string 
+  (replace-regexp-in-string
    "\\[\\[\\(\\([A-Za-z]+:\\)*[^|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
    (lambda (m)
-     (apply 
-      'format 
-      (append 
+     (apply
+      'format
+      (append
        '("<a href='%s'>%s</a>")
        (cond
         ;; We have both a url and a link
         ((match-string 3 m)
-         (list 
+         (list
           (match-string 1 m)
           (match-string 4 m)))
         ;; We only have a url
         ((match-string 1 m)
-         (list 
+         (list
           (match-string 1 m)
           (match-string 1 m)))))))
    text))
@@ -81,17 +81,17 @@ broken over lines]]"))))
 
 A creole block is a paragraph or list item that can include
 links, italic, bold, line break or inline preformatted markup."
-  (replace-regexp-in-string 
-   "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*" 
+  (replace-regexp-in-string
+   "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
    "<strong>\\1</strong>"
-   (replace-regexp-in-string 
-    "//\\(\\(.\\|\n\\)*\\)//" 
+   (replace-regexp-in-string
+    "//\\(\\(.\\|\n\\)*\\)//"
     "<em>\\1</em>"
-    (replace-regexp-in-string 
-     "{{{\\(\\(.\\|\n\\)*\\)}}}" 
+    (replace-regexp-in-string
+     "{{{\\(\\(.\\|\n\\)*\\)}}}"
      "<code>\\1</code>"
-     (replace-regexp-in-string 
-      "\\\\" 
+     (replace-regexp-in-string
+      "\\\\"
       "<br/>"
       (creole-link-parse text))))))
 
@@ -141,7 +141,9 @@ Returns a list of parsed elements."
             ;; Actually, the end = is optional... not sure if, when
             ;; there is an end = it has to be the same number as the
             ;; first one
-            (if (not (re-search-forward "^\\(=+\\)[ \t]+\\(.*\\)[ \t]+\\(=+\\)$" nil 't))
+            (if (not
+                 (re-search-forward
+                  "^\\(=+\\)[ \t]+\\(.*\\)[ \t]+\\(=+\\)$" nil 't))
                 (error "Creole: badly formatted heading"))
             (when (equal (length (match-string 3))
                          level)
@@ -186,7 +188,8 @@ Returns a list of parsed elements."
           (forward-line))
          (;; Pre-formatted block
           (looking-at "^\n{{{$")
-          (if (not (re-search-forward "^\n{{{\n\\(\\(.\\|\n\\)*?\\)\n}}}$" nil t))
+          (if (not
+               (re-search-forward "^\n{{{\n\\(\\(.\\|\n\\)*?\\)\n}}}$" nil t))
               (error "Creole: bad preformatted block"))
           (setq res (append res
                               (list
@@ -196,9 +199,9 @@ Returns a list of parsed elements."
           (and (looking-at "^[^=*]")
                (not (looking-at "^$")))
           (let* ((start (point))
-                 (end 
+                 (end
                   (save-match-data
-                    (let* ((matched-end 
+                    (let* ((matched-end
                             ;; Find the end - the end is actually BEFORE this
                             (re-search-forward "\\(^$\\)\\|\\(^[=*]\\)" nil 't))
                            (matched (if matched-end (match-string 0))))
@@ -208,8 +211,8 @@ Returns a list of parsed elements."
                        ((equal matched "=") (- matched-end 2))
                        (t
                         (point-max)))))))
-            (setq res 
-                  (append 
+            (setq res
+                  (append
                    res
                    (list
                     (cons 'para (buffer-substring start end)))))
@@ -230,7 +233,10 @@ Returns a list of parsed elements."
     (insert "* list item\n** 2nd list item\n*** 3rd list item\n")
     (insert "** another 2nd list item\n*** another 3rd list item\n")
     (insert " ----\n")
-    (insert "This is a paragraph\nthat runs over several lines\n* and a list item stops it\n")
+    (insert "This is a paragraph
+that runs over several lines
+* and a list item stops it
+")
     (insert "This is a paragraph {{{with code}}} and [[links]]
 and **bold** and //italics//.")))
 
@@ -239,8 +245,8 @@ and **bold** and //italics//.")))
   (with-temp-buffer
     (insert "= Heading! =\n")
     (insert "This is a paragraph {{{with code}}} and [[links]]\n")
-    (should 
-     (equal 
+    (should
+     (equal
       (creole-tokenize (current-buffer))
       '((heading1 . "Heading!")
         (para . "This is a paragraph {{{with code}}} and [[links]]"))))))
@@ -248,8 +254,8 @@ and **bold** and //italics//.")))
 (ert-deftest creole-tokenize ()
   (with-temp-buffer
     (creole--test-doc (current-buffer))
-    (should 
-     (equal 
+    (should
+     (equal
       (creole-tokenize (current-buffer))
       '((heading1 . "Heading!")
         (heading2 . "Heading2!")
@@ -273,10 +279,10 @@ and **bold** and //italics//."))))))
 
 For example:
 
- (creole--list-item 'ol1) 
+ (creole--list-item 'ol1)
   => (ordered . 1)
 
- (creole--list-item 'ul10) 
+ (creole--list-item 'ul10)
   => (unordered . 10)"
   (save-match-data
     (let ((s (symbol-name list-symbol)))
@@ -308,7 +314,7 @@ For example:
                   (new (list (car lst-item) (cdr token))))
              (cond
               ;; Current level is higher than the last, embed a new list
-              ((and last               
+              ((and last
                     (> (cdr lst-item) last-level))
                (setcdr last (append (cdr last) (list new)))
                ;; Update the stack
@@ -322,7 +328,7 @@ For example:
                (pop state)
                (push (cons (cdr lst-item) new) state))
               ;; Current level is same as the last, extend the last list
-              ((and last               
+              ((and last
                     (< (cdr lst-item) last-level))
                (loop for i from 1 to (- last-level (cdr lst-item))
                      do (pop state))
@@ -335,7 +341,8 @@ For example:
                (setq result (append result (list new)))
                ;; Update the stack
                (push (cons (cdr lst-item) new) state)))))
-          ;; Not a list item - just push it onto the result, always empty the list state
+          ;; Not a list item - just push it onto the result, always
+          ;; empty the list state
           (t
            (setq state '())
            (setq result (append result (list token))))))
@@ -348,9 +355,9 @@ For example:
 The test here takes a list that would come from 'creole-tokenize'
 and checks it against what should come out of 'creole-structure'.
 In other words, a parsed creole document representation."
-  (should 
+  (should
    (equal
-    (creole-structure 
+    (creole-structure
      '((h1 . "this is a heading!")
        (ul1 . "this is a first item")
        (ul1 . "this is a 2nd first level item")
@@ -395,9 +402,12 @@ should come out."
     (insert "** this is a first 2nd level item\n")
     (insert "** this is a 2nd 2nd level item\n")
     (insert "* this is another return to first level item\n")
-    (insert "This is a paragraph\nthat runs over several lines\n* and a list item stops it\n")
+    (insert "This is a paragraph
+that runs over several lines
+* and a list item stops it
+")
     (insert "This is a paragraph {{{with code}}} and [[links]]\n")
-    (should 
+    (should
      (equal
       (creole-structure (creole-tokenize (current-buffer)))
       '((heading1 . "this is a heading!")
@@ -423,9 +433,10 @@ that runs over several lines")
 (defun creole--html-list (type lst)
   "Export the specified LST in HTML.
 
-The exported HTML is written into the current buffer. 
+The exported HTML is written into the current buffer.
 
-This is NOT intended to be used by anything but 'creole-export-html'."
+This is NOT intended to be used by anything but
+'creole-export-html'."
   (let ((first t))
     (insert "<" (symbol-name type) ">\n")
     (loop for item in lst
@@ -446,10 +457,10 @@ This is NOT intended to be used by anything but 'creole-export-html'."
 (ert-deftest creole--html-list ()
   "Test the list export, which is a little complex."
   (with-temp-buffer
-    (creole--html-list 
-     'ul 
-     '("this is a list" 
-       (ul "with a deeper list") 
+    (creole--html-list
+     'ul
+     '("this is a list"
+       (ul "with a deeper list")
        "and another item on the end"))
     (should (equal (buffer-substring-no-properties (point-min)(point-max))
                    "<ul>
@@ -461,8 +472,8 @@ This is NOT intended to be used by anything but 'creole-export-html'."
 </ul>
 "))))
 
-(defun* creole-html (docbuf 
-                     &optional html-buffer 
+(defun* creole-html (docbuf
+                     &optional html-buffer
                      &key result-mode
                      (erase-existing t)
                      switch-to)
@@ -493,20 +504,26 @@ Returns the HTML-BUFFER."
                 :result-mode 'html-mode
                 :switch-to 't))
   (let ((result-buffer ; make up the result buffer
-         (or html-buffer 
-             (get-buffer-create 
-              (replace-regexp-in-string 
+         (or html-buffer
+             (get-buffer-create
+              (replace-regexp-in-string
                "\\(\\**\\)\\(.*\\)\\(\\**\\)"
                "*creolehtml-\\1*"
-               (buffer-name (if (bufferp docbuf) docbuf (get-buffer docbuf))))))))
-    (let ((creole (creole-structure (creole-tokenize docbuf))))  ; Get the parsed creole doc
+               (buffer-name
+                (if (bufferp docbuf)
+                    docbuf
+                  (get-buffer docbuf))))))))
+    (let ((creole
+           (creole-structure
+            (creole-tokenize docbuf))))  ; Get the parsed creole doc
       (with-current-buffer result-buffer
         (if erase-existing (erase-buffer)) ; Erase if we were asked to
         (loop for element in creole
-              do 
+              do
               (let ((syntax (car element)))
                 (case syntax
-                  ;; The list elements can follow on from each other and require special handling
+                  ;; The list elements can follow on from each other
+                  ;; and require special handling
                   ((ul ol)
                    ;; FIXME lists don't do block level replacement yet!
                    (creole--html-list syntax (cdr element)))
@@ -521,18 +538,12 @@ Returns the HTML-BUFFER."
                   (hr
                    (insert "<hr/>\n"))
                   (para
-                   (insert (format "<p>%s</p>\n"
-                                   (creole-block-parse (cdr element))))))))
+                   (insert (format
+                            "<p>%s</p>\n"
+                            (creole-block-parse (cdr element))))))))
         (if result-mode (call-interactively result-mode)))
       (if switch-to (switch-to-buffer result-buffer))
       result-buffer)))
-
-(defun creole-wiki (filename)
-  "Send the the creole filename as HTML to the stdout."
-  (interactive "fCreole file: ")
-  (let ((buffer (find-file-noselect filename)))
-    (with-current-buffer (creole-html buffer)
-      (princ (buffer-substring (point-min)(point-max))))))
 
 (ert-deftest creole-list-to-html ()
   "Test lists (which are a little complicated) export correctly."
@@ -594,6 +605,13 @@ that runs over several lines</p>
 <p>This is a paragraph <code>with code</code> and <a href='links'>links</a>
 and <strong>bold</strong> and <em>italics</em>.</p>
 "))))))
+
+(defun creole-wiki (filename)
+  "Send the the creole filename as HTML to the stdout."
+  (interactive "fCreole file: ")
+  (let ((buffer (find-file-noselect filename)))
+    (with-current-buffer (creole-html buffer)
+      (princ (buffer-substring (point-min)(point-max))))))
 
 (provide 'creole)
 
