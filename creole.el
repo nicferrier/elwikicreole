@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.5
+;; Version: 0.6
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -1051,6 +1051,7 @@ POSITION."
   :group 'creole
   :type '(string))
 
+;;;###autoload
 (defun* creole-wiki (source
                      &key
                      destination
