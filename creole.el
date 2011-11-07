@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.6
+;; Version: 0.6.1
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -1051,6 +1051,49 @@ POSITION."
   :group 'creole
   :type '(string))
 
+(defun creole-moustache (template variables)
+  "Moustache replace in TEMPLATE with VARIABLES.
+
+Eg:
+
+  (creole-moustache
+    \"<textarea>{{text}}</textarea>\"
+    '((text . \"this is my text\")))
+
+  =>  \"<textarea>this is my text</textarea>\""
+  (replace-regexp-in-string
+   "{{\\([A-Za-z0-9_-]+\\)}}"
+   (lambda (m)
+     (let* ((expansion (match-string 1 m))
+            (var (intern expansion))
+            (pair (assoc var variables)))
+       (if pair
+           (cdr pair)
+         (concat "{{" expansion "}}"))))
+   template))
+
+(ert-deftest creole-moustache ()
+  "Test the moustache templating."
+  (should
+   (equal
+    "<<this is a test>>"
+    (creole-moustache
+     "<<{{text}}>>"
+     '((text . "this is a test")))))
+  (should
+   (equal
+    "<<this is a test>>[[{{with-a-spare-var}}]]"
+    (creole-moustache
+     "<<{{text}}>>[[{{with-a-spare-var}}]]"
+     '((text . "this is a test")))))
+  (should
+   (equal
+    "<<this is a test>>[[another test]]"
+    (creole-moustache
+     "<<{{text}}>>[[{{working-var}}]]"
+     '((text . "this is a test")
+       (working-var . "another test"))))))
+
 ;;;###autoload
 (defun* creole-wiki (source
                      &key
@@ -1113,6 +1156,13 @@ BODY-FOOTER - a string or a file-name with HTML code to be
 inserted in the BODY of the HTML document after the Creole markup
 export.  A file-name is detected in the same way as for SOURCE.
 
+The BODY-HEADER and the BODY-FOOTER are treated as moustache
+templates and expanded before being inserted.  See
+'creole-moustache' for a description.  Variables passed to
+'creole-moustache' with the template are:
+
+  text - the creole source text of the page
+
 DOCROOT - base any files to be served.  Any file-name reference
 for CSS or JavaScript, if residing under this docroot, will be
 linked to the document rather than embedded.
@@ -1156,124 +1206,138 @@ All, any or none of these keys may be specified.
             (with-current-buffer (get-buffer-create "* creole-source *")
               (insert source)
               (current-buffer)))))
-         (html-buffer (cond
-                       ((bufferp destination)
-                        destination)
-                       ((stringp destination)
-                        (get-buffer-create destination))
-                       (t
-                        (get-buffer-create "*creole-html*")))))
+         (html-buffer
+          (cond
+           ((bufferp destination)
+            destination)
+           ((stringp destination)
+            (get-buffer-create destination))
+           (t
+            (get-buffer-create "*creole-html*")))))
 
     ;; Export the creole to the result buffer
     (creole-html source-buffer html-buffer :do-font-lock htmlfontify)
 
     ;; Now a bunch of other transformations on the result buffer
     (with-current-buffer html-buffer
-      ;; Insert the BODY header and footer
-      (when body-header
-        (let ((hdr (creole--expand-item-value body-header)))
-          (when (eq (car hdr) :string)
+      (let* ((creole-text
+              (with-current-buffer source-buffer
+                (buffer-substring (point-min)(point-max))))
+             ;; We should let users specify more variables in the
+             ;; call to creole-wiki?
+             (variables `((text . ,creole-text))))
+
+        ;; Insert the BODY header and footer
+        (when body-header
+          (let ((hdr (creole--expand-item-value body-header)))
+            (when (eq (car hdr) :string)
+              (goto-char (point-min))
+              (insert
+               (creole-moustache
+                (cdr hdr)
+                variables))))
+        (when body-footer
+          (let ((ftr (creole--expand-item-value body-footer)))
+            (when (eq (car ftr) :string)
+               (goto-char (point-max))
+               (insert
+                (creole-moustache
+                 (cdr ftr)
+                 variables)))))
+
+        ;; Now wrap everything we have so far with the BODY tag
+        (creole--wrap-buffer-text "<body>\n" "</body>\n")
+
+        ;; Now stuff that should go in a header
+        (when (or css javascript meta other-link
+                  (and htmlfontify
+                       htmlfontify-style
+                       (next-single-property-change
+                        (point-min)
+                        :css-list
+                        (current-buffer)
+                        (point-max))))
+          (let (head-marker)
             (goto-char (point-min))
-            (insert (cdr hdr)))))
-      (when body-footer
-        (let ((ftr (creole--expand-item-value body-footer)))
-          (when (eq (car ftr) :string)
-            (goto-char (point-max))
-            (insert (cdr ftr)))))
-
-      ;; Now wrap everything we have so far with the BODY tag
-      (creole--wrap-buffer-text "<body>\n" "</body>\n")
-
-       ;; Now stuff that should go in a header
-       (when (or css javascript meta other-link
-                 (and htmlfontify
-                      htmlfontify-style
-                      (next-single-property-change
-                       (point-min)
-                       :css-list
-                       (current-buffer)
-                       (point-max))))
-        (let (head-marker)
-          (goto-char (point-min))
-          (insert "<head>\n")
-          (setq head-marker (point-marker))
-          (insert "</head>\n")
-          (creole--insert-template
-           css
-           head-marker
-           docroot
-           "<link rel='stylesheet' href='%s' type='text/css'/>\n"
-           "<style>\n%s\n</style>\n")
-          (creole--insert-template
-           javascript
-           head-marker
-           docroot
-           "<script src='%s' language='Javascript'></script>\n"
-           "<script>
+            (insert "<head>\n")
+            (setq head-marker (point-marker))
+            (insert "</head>\n")
+            (creole--insert-template
+             css
+             head-marker
+             docroot
+             "<link rel='stylesheet' href='%s' type='text/css'/>\n"
+             "<style>\n%s\n</style>\n")
+            (creole--insert-template
+             javascript
+             head-marker
+             docroot
+             "<script src='%s' language='Javascript'></script>\n"
+             "<script>
 //<!--
 %s
 //-->
 </script>
 ")
-          (creole--insert-template
-           meta
-           head-marker
-           docroot
-           "<meta %s/>\n"
-           "<meta %s/>\n")
-          (creole--insert-template
-           other-link
-           head-marker
-           docroot
-           "<link %s/>\n"
-           "<link %s/>\n")
+            (creole--insert-template
+             meta
+             head-marker
+             docroot
+             "<meta %s/>\n"
+             "<meta %s/>\n")
+            (creole--insert-template
+             other-link
+             head-marker
+             docroot
+             "<link %s/>\n"
+             "<link %s/>\n")
 
-          ;; Find any styles that are embedded
-          (if (and htmlfontify htmlfontify-style)
-              (save-excursion
-                ;; This actually needs to be a loop of some sort - to
-                ;; find the next change until there are no further
-                ;; changes
-                (let* ((p (next-single-property-change
-                           (point-min)
-                           :css-list
-                           (current-buffer)
-                           (point-max)))
-                       (css (get-text-property
-                             p
+            ;; Find any styles that are embedded
+            (if (and htmlfontify htmlfontify-style)
+                (save-excursion
+                  ;; This actually needs to be a loop of some sort - to
+                  ;; find the next change until there are no further
+                  ;; changes
+                  (let* ((p (next-single-property-change
+                             (point-min)
                              :css-list
-                             (current-buffer))))
-                  (save-excursion
-                    (goto-char head-marker)
-                    (insert
-                     "<style>\n"
-                     (mapconcat
-                      (lambda (style)
-                        (format
-                         "span.%s   %s\nspan.%s a %s\n%s\n"
-                         (cadr style) (cddr style)
-                         (cadr style) (hfy-link-style (cddr style))
-                         ;; Add in our own colors - just add nothing
-                         ;; if we don't have customization for it
-                         (condition-case err
-                             (let ((css-value
-                                    (symbol-value
-                                     (intern
-                                      (concat
-                                       "creole-css-color-"
-                                       (cadr style))))))
-                               (if css-value
-                                   (format
-                                    "span.%s { color: %s; }\n"
-                                    (cadr style)
-                                    css-value)))
-                           (void-variable ""))))
-                      css
-                      "\n")
-                     "\n</style>\n")))))))
+                             (current-buffer)
+                             (point-max)))
+                         (css (get-text-property
+                               p
+                               :css-list
+                               (current-buffer))))
+                    (save-excursion
+                      (goto-char head-marker)
+                      (insert
+                       "<style>\n"
+                       (mapconcat
+                        (lambda (style)
+                          (format
+                           "span.%s   %s\nspan.%s a %s\n%s\n"
+                           (cadr style) (cddr style)
+                           (cadr style) (hfy-link-style (cddr style))
+                           ;; Add in our own colors - just add nothing
+                           ;; if we don't have customization for it
+                           (condition-case err
+                               (let ((css-value
+                                      (symbol-value
+                                       (intern
+                                        (concat
+                                         "creole-css-color-"
+                                         (cadr style))))))
+                                 (if css-value
+                                     (format
+                                      "span.%s { color: %s; }\n"
+                                      (cadr style)
+                                      css-value)))
+                             (void-variable ""))))
+                        css
+                        "\n")
+                       "\n</style>\n")))))))
 
        ;; Wrap the whole thing in the HTML tag
-       (creole--wrap-buffer-text "<html>\n" "</html>\n"))
+       (creole--wrap-buffer-text "<html>\n" "</html>\n"))))
 
     ;; Should we output the whole thing to the default output stream?
     (if (eq destination t)
