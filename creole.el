@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.6.1
+;; Version: 0.6.2
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -584,6 +584,8 @@ possible to use the 'cadr' of the style to add colors."
                          (point-max))))
                     (if (called-interactively-p 'interactive)
                         (switch-to-buffer htmlbuf)
+                      (with-current-buffer htmlbuf
+                        (set-buffer-modified-p nil))
                       (kill-buffer htmlbuf))
                     result)))))))))
 
@@ -793,7 +795,7 @@ Return a cons cell with the 'car' identifying the type, one of:
 
 and the 'cdr' being the expanded string."
   (save-match-data
-    (if (string-match "^\\(./\\|/\\|~\\).*" item)
+    (if (string-match "^\\(\\./\\|/\\|~\\).*" item)
         ;; file-name templating has been requested
         (let (docroot-match-index
               docroot-fq
@@ -1102,6 +1104,7 @@ Eg:
                      (htmlfontify-style t)
                      body-header
                      body-footer
+                     variables
                      docroot
                      css
                      javascript
@@ -1162,6 +1165,9 @@ templates and expanded before being inserted.  See
 'creole-moustache' with the template are:
 
   text - the creole source text of the page
+
+or any variable in VARIABLES, which is an alist of
+symbols->values.
 
 DOCROOT - base any files to be served.  Any file-name reference
 for CSS or JavaScript, if residing under this docroot, will be
@@ -1225,7 +1231,7 @@ All, any or none of these keys may be specified.
                 (buffer-substring (point-min)(point-max))))
              ;; We should let users specify more variables in the
              ;; call to creole-wiki?
-             (variables `((text . ,creole-text))))
+             (vars (append `((text . ,creole-text)) variables)))
 
         ;; Insert the BODY header and footer
         (when body-header
@@ -1235,7 +1241,7 @@ All, any or none of these keys may be specified.
               (insert
                (creole-moustache
                 (cdr hdr)
-                variables))))
+                vars))))
         (when body-footer
           (let ((ftr (creole--expand-item-value body-footer)))
             (when (eq (car ftr) :string)
@@ -1243,7 +1249,7 @@ All, any or none of these keys may be specified.
                (insert
                 (creole-moustache
                  (cdr ftr)
-                 variables)))))
+                 vars)))))
 
         ;; Now wrap everything we have so far with the BODY tag
         (creole--wrap-buffer-text "<body>\n" "</body>\n")
