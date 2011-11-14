@@ -469,7 +469,7 @@ This is NOT intended to be used by anything but
               (insert "</li>\n"))
             (setq first nil)
             (insert "<li>")
-            (insert item))))
+            (insert (creole-block-parse item)))))
     (insert "</li>\n")
     (insert "</" (symbol-name type) ">\n")))
 
@@ -478,19 +478,19 @@ This is NOT intended to be used by anything but
   (with-temp-buffer
     (creole--html-list
      'ul
-     '("this is a list"
+     '("this is a list //with an italicized part//"
        (ul "with a deeper list")
-       "and another item on the end"))
+       "and another item on the end with **bold**"))
     (should
      (equal
       (buffer-substring-no-properties
        (point-min)(point-max))
       "<ul>
-<li>this is a list<ul>
+<li>this is a list <em>with an italicized part</em><ul>
 <li>with a deeper list</li>
 </ul>
 </li>
-<li>and another item on the end</li>
+<li>and another item on the end with <strong>bold</strong></li>
 </ul>
 "))))
 
