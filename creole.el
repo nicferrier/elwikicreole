@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.6.2
+;; Version: 0.6.3
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -446,17 +446,17 @@ This is NOT intended to be used by anything but
   (let ((first t))
     (insert "<" (symbol-name type) ">\n")
     (loop for item in lst
-          do (progn
-               (cond
-                ((listp item)
-                 (creole--html-list (car item) (cdr item))
-                 (setq first nil))
-                (t
-                 (if (not first)
-                     (insert "</li>\n"))
-                 (setq first nil)
-                 (insert "<li>")
-                 (insert item)))))
+          do
+          (cond
+           ((listp item)
+            (creole--html-list (car item) (cdr item))
+            (setq first nil))
+           (t
+            (if (not first)
+                (insert "</li>\n"))
+            (setq first nil)
+            (insert "<li>")
+            (insert item))))
     (insert "</li>\n")
     (insert "</" (symbol-name type) ">\n")))
 
