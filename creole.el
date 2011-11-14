@@ -478,8 +478,11 @@ This is NOT intended to be used by anything but
      '("this is a list"
        (ul "with a deeper list")
        "and another item on the end"))
-    (should (equal (buffer-substring-no-properties (point-min)(point-max))
-                   "<ul>
+    (should
+     (equal
+      (buffer-substring-no-properties
+       (point-min)(point-max))
+      "<ul>
 <li>this is a list<ul>
 <li>with a deeper list</li>
 </ul>
