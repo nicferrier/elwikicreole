@@ -86,7 +86,10 @@ broken over lines]]"))))
   "Parses TEXT as a creole block.
 
 A creole block is a paragraph or list item that can include
-links, italic, bold, line break or inline preformatted markup."
+links, italic, bold, line break or inline preformatted markup.
+
+Returns a copy of TEXT with the WikiCreole replaced with
+appropriate HTML."
   (replace-regexp-in-string
    "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
    "<strong>\\1</strong>"
