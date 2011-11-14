@@ -1241,7 +1241,8 @@ All, any or none of these keys may be specified.
               (insert
                (creole-moustache
                 (cdr hdr)
-                vars))))
+                vars)))))
+
         (when body-footer
           (let ((ftr (creole--expand-item-value body-footer)))
             (when (eq (car ftr) :string)
@@ -1343,7 +1344,7 @@ All, any or none of these keys may be specified.
                        "\n</style>\n")))))))
 
        ;; Wrap the whole thing in the HTML tag
-       (creole--wrap-buffer-text "<html>\n" "</html>\n"))))
+       (creole--wrap-buffer-text "<html>\n" "</html>\n")))
 
     ;; Should we output the whole thing to the default output stream?
     (if (eq destination t)
@@ -1420,7 +1421,7 @@ A preformatted area with styling.
 " :htmlfontify t))
 
 
-(ert-deftest creole-wiki ()
+(ert-deftest creole-wiki-base ()
   "Test the comprehensive HTML production."
   (creole--wiki-test
     "= A Creole Document =
@@ -1433,7 +1434,9 @@ This is a Creole document with some stuff in it.
 <p>This is a Creole document with some stuff in it.</p>
 </body>
 </html>
-")
+"))
+
+(ert-deftest creole-wiki-headers-footers ()
 
   ;; Headers AND footers
   (creole--wiki-test
@@ -1451,8 +1454,9 @@ This is a Creole document with some stuff in it.
 </html>
 "
     :body-header "<div id='header'>the header</div>\n"
-    :body-footer "<div id='footer'>the footer</div>\n")
+    :body-footer "<div id='footer'>the footer</div>\n"))
 
+(ert-deftest creole-wiki-css ()
   ;; CSS
   (creole--wiki-test
     "= A Creole Document =
@@ -1494,9 +1498,9 @@ font-size: 8pt;
     :docroot "~/elwikicreole/"
     :css "p {
 font-size: 8pt;
-}")
+}"))
 
-  ;; Javascript
+(ert-deftest creole-wiki-js ()
   (creole--wiki-test
     "= A Creole Document =
 
@@ -1540,8 +1544,7 @@ doSomething();
     :javascript "$(document).ready(function () {
 doSomething();
 });
-")
-  )
+"))
 
 
 (provide 'creole)
