@@ -306,7 +306,17 @@ For example:
   (should (equal nil (creole--list-item 'h1))))
 
 (defun creole-structure (lst)
-  "Make a parsed structure from a list."
+  "Make a parsed structure from a list.
+
+This is a parser, of sorts, in that it turns a list of tokens
+into more of a tree structure.  In WikiCreole though, the only
+thing that really needs a tree representation is ordered and
+unordered lists, so all this function does is add structure to a
+stream of list tokens.  All other tokens are passed through
+directly.
+
+This is not marked private because it does form part of what
+might be called the parsing API of this creole library."
   (let* ((docptr lst)
          (state '()) ; used as a stack
          (result '()))
