@@ -462,8 +462,8 @@ This is NOT intended to be used by anything but
             (creole--html-list (car item) (cdr item))
             (setq first nil))
            (t
-            (if (not first)
-                (insert "</li>\n"))
+            (when (not first)
+              (insert "</li>\n"))
             (setq first nil)
             (insert "<li>")
             (insert item))))
