@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.6.3
+;; Version: 0.7.0
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -204,6 +204,18 @@ Returns a list of parsed elements."
                               (list
                                (cons 'preformatted (match-string 1)))))
           (forward-line))
+         (;; Lisp-plugin
+          (looking-at "^\n<<($")
+          (if (not
+               (re-search-forward "^\n<<(\n\\(\\(.\\|\n\\)*?\\)\n)>>$" nil t))
+              (error "Creole: bad Lisp plugin block"))
+          (let* ((plugin-lisp (match-string 1))
+                 (value (eval (car (read-from-string plugin-lisp))))
+                 (plugin-fragment (with-temp-buffer
+                                    (insert value)
+                                    (creole-tokenize (current-buffer)))))
+            (setq res (append res plugin-fragment)))
+          (forward-line))
          (;; Paragraph line
           (and (looking-at "^[^=*]")
                (not (looking-at "^$")))
@@ -259,6 +271,22 @@ and **bold** and //italics//.")))
       (creole-tokenize (current-buffer))
       '((heading1 . "Heading!")
         (para . "This is a paragraph {{{with code}}} and [[links]]"))))))
+
+(ert-deftest creole-tokenize-lisp ()
+  "Test the new embedded lisp stuff"
+  (flet ((my-plugin
+          () ; arg list
+          "== Plugin Heading! ==
+This is a paragraph {{{with code}}} and [[links]]"))
+        (with-temp-buffer
+          (insert "= Heading! =\n")
+          (insert "\n<<(\n(my-plugin)\n)>>\n")
+          (should
+           (equal
+            (creole-tokenize (current-buffer))
+            '((heading1 . "Heading!")
+              (heading2 . "Plugin Heading!")
+              (para . "This is a paragraph {{{with code}}} and [[links]]")))))))
 
 (ert-deftest creole-tokenize ()
   (with-temp-buffer
@@ -797,6 +825,36 @@ that runs over several lines</p>
 and <strong>bold</strong> and <em>italics</em>.</p>
 "))))))
 
+(defun creole--file-under-root-p (file-name root)
+  "Is FILE-NAME under the directory ROOT?
+
+Return nil if there is no match or the part of the file-name
+which was not under the docroot."
+  (and root
+       (file-directory-p root)
+       (let* ((true-name
+               (file-truename
+                (expand-file-name file-name)))
+              (root-dir
+               (directory-file-name
+                (expand-file-name root))))
+         (let ((docroot-match-index
+                (compare-strings
+                 root-dir 0 (length root-dir)
+                 true-name 0 (length true-name))))
+           ;; If the compare-value is less than 0 we matched
+           ;; and we have extra characters in the
+           ;; true-name...  we *should* have extra
+           ;; characters because otherwise we'd be referring
+           ;; to the docroot.
+           (when (< docroot-match-index 0)
+             (substring
+              true-name
+              ;; -2 here because of index 0 *and* needing the
+              ;; -leading slash
+              (- (abs docroot-match-index) 1)
+              (length true-name)))))))
+
 (defun creole--expand-item-value (item &optional docroot)
   "Expand ITEM to be a value.
 
@@ -813,83 +871,87 @@ and the 'cdr' being the expanded string."
   (save-match-data
     (if (string-match "^\\(\\./\\|/\\|~\\).*" item)
         ;; file-name templating has been requested
-        (let (docroot-match-index
-              docroot-fq
-              (true-name (file-truename (expand-file-name item))))
-          ;; Check if we have a docroot that works
-          (if (and docroot
-                   (file-exists-p true-name)
-                   (let ((docrootdir
-                          (file-name-directory
-                           (expand-file-name docroot))))
-                     (setq docroot-fq docrootdir)
-                     (file-directory-p docrootdir))
-                   ;; Test the targetfile is under the docroot
-                   (let ((docrootlen (length docroot-fq)))
-                     (setq docroot-match-index
-                           (compare-strings
-                            docroot-fq 0 docrootlen
-                            true-name 0 (length true-name)))
-                     ;; If the compare-value is less than 0 we matched
-                     ;; and we have extra characters in the
-                     ;; true-name...  we *should* have extra
-                     ;; characters because otherwise we'd be referring
-                     ;; to the docroot.
-                     (< docroot-match-index 0)))
+        ;; Check if we have a docroot that works
+        (let* ((path-info (creole--file-under-root-p item docroot)))
+          (if path-info
               ;; The file is linkable so return the template with the
               ;; docroot-ed true-name
-              (cons :link
-                    (substring
-                     true-name
-                     ;; -2 here because of index 0 *and* needing the
-                     ;; -leading slash
-                     (- (abs docroot-match-index) 2)
-                     (length true-name)))
-            ;; No workable docroot so return the text of the file
-            (let ((file-name (expand-file-name item)))
-              (if (file-exists-p file-name)
-                  (with-current-buffer (find-file-noselect file-name)
+              (cons :link path-info)
+            ;; No workable docroot so return either the text of the
+            ;; file (if it exists) or just the filename
+            (let ((fname (file-truename (expand-file-name item))))
+              (if (file-exists-p fname)
+                  (with-current-buffer (find-file-noselect fname)
                     (cons :string
                           (buffer-substring
                            (point-min)
                            (point-max))))
-                (cons :link nil)))))
+                (cons :link item)))))
       ;; The item was not a file-name so just return it
       (cons :string item))))
 
-(ert-deftest creole--expand-item-value ()
-  ;; FIXME - this test depends on my file system structure, the creole
-  ;; stuff being in a directory ~/elwikicreole as opposed to
-  ;; absolutely anywhere else
-
+(ert-deftest creole--expand-item-value-plain-string ()
   ;; Should just be the value of the string
   (should (equal
            (cons :string "just a string")
            (creole--expand-item-value
             "just a string"
-            "~/elwikicreole/")))
+            "~/elwikicreole/"))))
 
+(ert-deftest creole--expand-item-value-safe-file ()
   ;; Should be a linked file-name under the docroot
-  (should (equal
-           (cons :link "/README.creole")
-           (creole--expand-item-value
-            "~/elwikicreole/README.creole"
-            "~/elwikicreole/")))
+  (flet ((creole--file-under-root-p
+          (file-name root)
+          ;; TODO - implementation
+          "/README.creole"))
+        (should (equal
+                 (cons :link "/README.creole")
+                 (creole--expand-item-value
+                  "~/elwikicreole/README.creole"
+                  "~/elwikicreole/")))))
 
+(ert-deftest creole--expand-item-value-null-file ()
   ;; Should be an empty :link
-  (should (equal
-           (cons :link nil)
-           (creole--expand-item-value
-            "~/elwikicreole/__not__there__.creole"
-            "~/elwikicreole/")))
+  (flet ((creole--file-under-root-p
+          (file-name root)
+          ;; TODO - implementation
+          nil))
+        (should (equal
+                 (cons :link "/__not__there__.creole")
+                 (creole--expand-item-value
+                  "/__not__there__.creole"
+                  "~/elwikicreole/")))))
 
+(ert-deftest creole--expand-item-value-unsafe-file ()
   ;; Supply a filename but get back the expanded string
   ;; because the filename is not under the docroot
-  (should (equal
-           (cons :string "= A very small Creole document =\n")
-           (creole--expand-item-value
-            "~/elwikiengine/wiki/small.creole"
-            "~/eolwikicreole/"))))
+  (let ((TEST-FILE-NAME "/home/nferrier/wiki/small.creole")
+        (TMPBUF
+         (get-buffer-create
+          (generate-new-buffer-name
+           " *creole-expand-item-value-unsafe-file*"))))
+    (with-current-buffer TMPBUF
+      (insert "= A very small Creole document =\n"))
+    (flet
+        ((creole--file-under-root-p
+          (file-name root)
+          nil)
+         (file-truename
+          (file-name)
+          TEST-FILE-NAME)
+         (file-exists-p
+          (file-name)
+          (equal file-name TEST-FILE-NAME))
+         (find-file-noselect
+          (file-name)
+          TMPBUF))
+      (should
+       (equal
+        (cons :string "= A very small Creole document =\n")
+        (creole--expand-item-value
+         "~/elwikiengine/wiki/small.creole"
+         "~/eolwikicreole/"))))
+    (kill-buffer TMPBUF)))
 
 (defun creole--wrap-buffer-text (start end &optional buffer)
   "Simply wrap the text of BUFFER (or the current buffer).
@@ -1473,9 +1535,11 @@ This is a Creole document with some stuff in it.
     :body-footer "<div id='footer'>the footer</div>\n"))
 
 (ert-deftest creole-wiki-css ()
-  ;; CSS
-  (creole--wiki-test
-    "= A Creole Document =
+  (flet ((creole--file-under-root-p
+          (file-name root)
+          "/styles.css"))
+    (creole--wiki-test
+      "= A Creole Document =
 
 This is a Creole document with some stuff in it.
 "
@@ -1490,8 +1554,8 @@ This is a Creole document with some stuff in it.
 </html>
 "
     :docroot "~/elwikicreole/"
-    :css "~/elwikicreole/styles.css")
-
+    :css "~/elwikicreole/styles.css"))
+  ;; Test non-docroot CSS
   (creole--wiki-test
     "= A Creole Document =
 
@@ -1517,8 +1581,11 @@ font-size: 8pt;
 }"))
 
 (ert-deftest creole-wiki-js ()
-  (creole--wiki-test
-    "= A Creole Document =
+  (flet ((creole--file-under-root-p
+          (file-name root)
+          "/scripts.js"))
+    (creole--wiki-test
+      "= A Creole Document =
 
 This is a Creole document with some stuff in it.
 "
@@ -1533,7 +1600,7 @@ This is a Creole document with some stuff in it.
 </html>
 "
     :docroot "~/elwikicreole/"
-    :javascript "~/elwikicreole/scripts.js")
+    :javascript "~/elwikicreole/scripts.js"))
   (creole--wiki-test
     "= A Creole Document =
 
