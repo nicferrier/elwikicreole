@@ -165,6 +165,20 @@ Returns a list of parsed elements."
                                   ;; deal with here
                                   (match-string 2)))))
               (forward-line))))
+         (;; Table
+          (looking-at "^|")
+          ;; Requires that we're back in the table
+          (org-table-recalculate t)
+          (let* ((tbl (org-table-to-lisp))
+                 (pt (org-table-end)))
+            (setq res (append
+                       res
+                       (list
+                        (cons 'table tbl))))
+            (goto-char pt)
+            ;; Skip forward over any org-tbl comments
+            (re-search-forward "^[^#]" nil t)
+            (beginning-of-line)))
          (;; Unordered list item
           (looking-at "^\\(\\*+\\)[ \t]\\(.*\\)")
           (let ((level (length (match-string 1))))
@@ -260,6 +274,54 @@ that runs over several lines
 ")
     (insert "This is a paragraph {{{with code}}} and [[links]]
 and **bold** and //italics//.")))
+
+(defun creole--test-doc-with-table (buffer)
+  "Insert a test document of creole text into BUFFER."
+  (with-current-buffer buffer
+    (insert "= Heading! =\n")
+    (insert "\n")
+    (insert "== Heading2! ==\n")
+    (insert "| col1 | col2 |
+|   15 |   20 |
+|   7  |      |
+#+TBLFM: @3$1=@2$1 + 20
+")
+    ;; (insert "# an ordered list item\n## a 2nd ordered list item\n")
+    ;; (insert "== Heading3 is a multi word heading ==\n")
+    ;; (insert "\n{{{\n== this is preformatted ==\n{{\nIt looks great\n}}\n}}}\n")
+    ;; (insert "* list item\n** 2nd list item\n*** 3rd list item\n")
+    ;; (insert "** another 2nd list item\n*** another 3rd list item\n")
+    ;; (insert " ----\n")
+    (insert "This is a paragraph
+that runs over several lines
+* and a list item stops it
+")
+    (insert "This is a paragraph {{{with code}}} and [[links]]
+and **bold** and //italics//.")))
+
+(ert-deftest creole-tokenize-with-table ()
+  (with-temp-buffer
+    (creole--test-doc-with-table (current-buffer))
+    (should
+     (equal
+      (creole-tokenize (current-buffer))
+      '((heading1 . "Heading!")
+        (heading2 . "Heading2!")
+        (table . (("col1" "col2") ("15" "20") ("35" "")))
+        ;; (ol1 . "an ordered list item")
+        ;; (ol2 . "a 2nd ordered list item")
+        ;; (heading2 . "Heading3 is a multi word heading")
+        ;; (preformatted . "== this is preformatted ==\n{{\nIt looks great\n}}")
+        ;; (ul1 . "list item")
+        ;; (ul2 . "2nd list item")
+        ;; (ul3 . "3rd list item")
+        ;; (ul2 . "another 2nd list item")
+        ;; (ul3 . "another 3rd list item")
+        ;; (hr . "")
+        (para . "This is a paragraph\nthat runs over several lines")
+        (ul1 . "and a list item stops it")
+        (para . "This is a paragraph {{{with code}}} and [[links]]
+and **bold** and //italics//."))))))
 
 (ert-deftest creole-tokenize-newline-doc-end ()
   "Specific test for dealing with carriage return as the end."
@@ -477,6 +539,57 @@ that runs over several lines")
         (ul "and a list item stops it")
         (para . "This is a paragraph {{{with code}}} and [[links]]"))))))
 
+(ert-deftest creole-structure-end-to-end-with-table ()
+  "Test the parser directly with the result of the tokenizer.
+
+'creole-tokenize' is called on a buffer and checked against what
+should come out."
+  (with-temp-buffer
+    (insert "= this is a heading! =\n")
+    (insert "| col1 | col2 |
+|   15 |   20 |
+|   7  |      |
+#+TBLFM: @3$1=@2$1 + 20
+")
+    (insert "* this is a first item\n")
+    (insert "* this is a 2nd first level item\n")
+    (insert "** this is a first 2nd level item\n")
+    (insert "** this is a 2nd 2nd level item\n")
+    (insert "*** this is a first 3rd level item\n")
+    (insert "* this is a return to the first level item\n")
+    (insert "* this is a 2nd first level item\n")
+    (insert "** this is a first 2nd level item\n")
+    (insert "** this is a 2nd 2nd level item\n")
+    (insert "* this is another return to first level item\n")
+    (insert "This is a paragraph
+that runs over several lines
+* and a list item stops it
+")
+    (insert "This is a paragraph {{{with code}}} and [[links]]\n")
+    (should
+     (equal
+      (creole-structure (creole-tokenize (current-buffer)))
+      '((heading1 . "this is a heading!")
+        (table . (("col1" "col2") ("15" "20") ("35" "")))
+        (ul
+         "this is a first item"
+         "this is a 2nd first level item"
+         (ul
+          "this is a first 2nd level item"
+          "this is a 2nd 2nd level item"
+          (ul
+           "this is a first 3rd level item"))
+         "this is a return to the first level item"
+         "this is a 2nd first level item"
+         (ul
+          "this is a first 2nd level item"
+          "this is a 2nd 2nd level item")
+         "this is another return to first level item")
+        (para . "This is a paragraph
+that runs over several lines")
+        (ul "and a list item stops it")
+        (para . "This is a paragraph {{{with code}}} and [[links]]"))))))
+
 (defun creole--html-list (type lst)
   "Export the specified LST in HTML.
 
@@ -521,6 +634,44 @@ This is NOT intended to be used by anything but
 <li>and another item on the end with <strong>bold</strong></li>
 </ul>
 "))))
+
+(defun creole--html-table (table-list)
+  "Convert the org-table structure TABLE-LIST to HTML.
+
+We use 'orgtbl-to-generic' to do this."
+  (let ((value (orgtbl-to-generic
+                table-list
+                (list
+                 :tstart "<table>"
+                 :tend "</table>\n"
+                 :lstart "<tr>\n"
+                 :lend "</tr>"
+                 :fmt (lambda (field)
+                        ;; Where we do block formatting
+                        (format "<td>%s</td>\n" field))
+                 ))))
+    value))
+
+(ert-deftest creole--html-table ()
+  (let ((tbl '(("col1" "col2") ("15" "20") ("35" ""))))
+    (should
+     (equal
+      "<table>
+<tr>
+<td>col1</td>
+<td>col2</td>
+</tr>
+<tr>
+<td>15</td>
+<td>20</td>
+</tr>
+<tr>
+<td>35</td>
+<td></td>
+</tr>
+</table>
+"
+      (creole--html-table tbl)))))
 
 
 (defun creole-htmlize-string (text)
@@ -738,12 +889,18 @@ Returns the HTML-BUFFER."
                   ((ul ol)
                    ;; FIXME lists don't do block level replacement yet!
                    (creole--html-list syntax (cdr element)))
+                  ;; Headings - FIXME - we need to change these
+                  ;; obviously to something that can cope with any
+                  ;; level of heading
                   (heading1
                    (insert (format "<h1>%s</h1>\n" (cdr element))))
                   (heading2
                    (insert (format "<h2>%s</h2>\n" (cdr element))))
                   (heading3
                    (insert (format "<h3>%s</h3>\n" (cdr element))))
+                  ;; Tables
+                  (table
+                   (creole--html-table syntax (cdr element)))
                   ;; We support htmfontify for PRE blocks
                   (preformatted
                    (let ((styled (and do-font-lock
