@@ -177,7 +177,8 @@ Returns a list of parsed elements."
                         (cons 'table tbl))))
             (goto-char pt)
             ;; Skip forward over any org-tbl comments
-            (re-search-forward "^[^#]" nil t)
+            (unless (re-search-forward "^[^#]" nil t)
+              (goto-char (point-max)))
             (beginning-of-line)))
          (;; Unordered list item
           (looking-at "^\\(\\*+\\)[ \t]\\(.*\\)")
@@ -275,9 +276,9 @@ that runs over several lines
     (insert "This is a paragraph {{{with code}}} and [[links]]
 and **bold** and //italics//.")))
 
-(defun creole--test-doc-with-table (buffer)
-  "Insert a test document of creole text into BUFFER."
-  (with-current-buffer buffer
+(ert-deftest creole-tokenize-with-table ()
+  "Test a simple WikiCreole document with a table."
+  (with-temp-buffer
     (insert "= Heading! =\n")
     (insert "\n")
     (insert "== Heading2! ==\n")
@@ -286,42 +287,37 @@ and **bold** and //italics//.")))
 |   7  |      |
 #+TBLFM: @3$1=@2$1 + 20
 ")
-    ;; (insert "# an ordered list item\n## a 2nd ordered list item\n")
-    ;; (insert "== Heading3 is a multi word heading ==\n")
-    ;; (insert "\n{{{\n== this is preformatted ==\n{{\nIt looks great\n}}\n}}}\n")
-    ;; (insert "* list item\n** 2nd list item\n*** 3rd list item\n")
-    ;; (insert "** another 2nd list item\n*** another 3rd list item\n")
-    ;; (insert " ----\n")
     (insert "This is a paragraph
 that runs over several lines
 * and a list item stops it
 ")
     (insert "This is a paragraph {{{with code}}} and [[links]]
-and **bold** and //italics//.")))
-
-(ert-deftest creole-tokenize-with-table ()
-  (with-temp-buffer
-    (creole--test-doc-with-table (current-buffer))
+and **bold** and //italics//.")
     (should
      (equal
       (creole-tokenize (current-buffer))
       '((heading1 . "Heading!")
         (heading2 . "Heading2!")
         (table . (("col1" "col2") ("15" "20") ("35" "")))
-        ;; (ol1 . "an ordered list item")
-        ;; (ol2 . "a 2nd ordered list item")
-        ;; (heading2 . "Heading3 is a multi word heading")
-        ;; (preformatted . "== this is preformatted ==\n{{\nIt looks great\n}}")
-        ;; (ul1 . "list item")
-        ;; (ul2 . "2nd list item")
-        ;; (ul3 . "3rd list item")
-        ;; (ul2 . "another 2nd list item")
-        ;; (ul3 . "another 3rd list item")
-        ;; (hr . "")
         (para . "This is a paragraph\nthat runs over several lines")
         (ul1 . "and a list item stops it")
         (para . "This is a paragraph {{{with code}}} and [[links]]
-and **bold** and //italics//."))))))
+and **bold** and //italics//.")))))
+  (with-temp-buffer
+    (insert "= Heading! =\n")
+    (insert "\n")
+    (insert "== Heading2! ==\n")
+    (insert "| col1 | col2 |
+|   15 |   20 |
+|   7  |      |
+#+TBLFM: @3$1=@2$1 + 20
+")
+    (should
+     (equal
+      (creole-tokenize (current-buffer))
+      '((heading1 . "Heading!")
+        (heading2 . "Heading2!")
+        (table . (("col1" "col2") ("15" "20") ("35" ""))))))))
 
 (ert-deftest creole-tokenize-newline-doc-end ()
   "Specific test for dealing with carriage return as the end."
@@ -639,46 +635,69 @@ This is NOT intended to be used by anything but
   "Convert the org-table structure TABLE-LIST to HTML.
 
 We use 'orgtbl-to-generic' to do this."
-  (let ((value (orgtbl-to-generic
-                table-list
-                (list
-                 :tstart "<table>"
-                 :tend "</table>\n"
-                 :lstart "<tr>\n"
-                 :lend "</tr>"
-                 :fmt (lambda (field)
-                        ;; Where we do block formatting
-                        (format "<td>%s</td>\n" field))
-                 ))))
+  (let ((value
+         (orgtbl-to-generic
+          table-list
+          (list
+           :tstart "<table>"
+           :tend "</table>\n"
+           :hlstart "<th>\n"
+           :hlend "</th>"
+           :hllstart "<th>\n"
+           :hllend "</th>"
+           :lstart "<tr>\n"
+           :lend "</tr>"
+           :hline nil
+           :fmt (lambda (field)
+                  ;; Where we do block formatting
+                  (format
+                   "<td>%s</td>\n"
+                   (creole-block-parse field)))
+           ))))
     value))
 
 (ert-deftest creole--html-table ()
-  (let ((tbl '(("col1" "col2") ("15" "20") ("35" ""))))
+  "Test org tables.
+
+org-tables are not quite WikiCreole tables.  Creole table headers
+are like this:
+
+ |= header|= header|
+ |cell    |cell    |
+
+whereas we do org table headers like this:
+
+ |header| header|
+ ----------------
+ |cell  |cell   |
+
+Getting 'orgtbl-to-generic to do the WikiCreole style seems quite
+difficult."
+  (let ((tbl '(("col1" "col2")
+               hline
+               ("15" "20")
+               ("35" "**end**"))))
     (should
      (equal
+      (creole--html-table tbl)
       "<table>
-<tr>
+<th>
 <td>col1</td>
 <td>col2</td>
-</tr>
+</th>
 <tr>
 <td>15</td>
 <td>20</td>
 </tr>
 <tr>
 <td>35</td>
-<td></td>
+<td><strong>end</strong></td>
 </tr>
 </table>
-"
-      (creole--html-table tbl)))))
+"))))
 
 
 (defun creole-htmlize-string (text)
-  (interactive
-   (list
-    (buffer-substring (region-beginning)
-                      (region-end))))
   "Make TEXT syntax coloured HTML using Emacs font-lock.
 
 This uses an indicated Emacs mode at the start of the text:
@@ -729,6 +748,10 @@ This is from 'hfy-sprintf-stylesheet' which is part of
 Unfortunately, when run in batch mode Emacs doesn't attach colors
 to faces and so we don't get coloured styles.  It should be
 possible to use the 'cadr' of the style to add colors."
+  (interactive
+   (list
+    (buffer-substring (region-beginning)
+                      (region-end))))
   (let (mode-func)
     (save-match-data
       (if (progn
@@ -900,7 +923,7 @@ Returns the HTML-BUFFER."
                    (insert (format "<h3>%s</h3>\n" (cdr element))))
                   ;; Tables
                   (table
-                   (creole--html-table syntax (cdr element)))
+                   (insert (creole--html-table (cdr element))))
                   ;; We support htmfontify for PRE blocks
                   (preformatted
                    (let ((styled (and do-font-lock
@@ -936,6 +959,35 @@ Returns the HTML-BUFFER."
 </li>
 </ul>
 "))))))
+
+(ert-deftest creole-table-to-html ()
+  "Test tables (which are a little complicated) export correctly."
+  (with-temp-buffer
+    (insert "| col1 | col2 |
+|------|------|
+|   15 |   20 |
+|   7  |**end**|
+#+TBLFM: @3$1=@2$1 + 20
+")
+    (let ((html (creole-html (current-buffer))))
+      (with-current-buffer html
+        (goto-char (point-min))
+        (should (looking-at "<table>
+<th>
+<td>col1</td>
+<td>col2</td>
+</th>
+<tr>
+<td>15</td>
+<td>20</td>
+</tr>
+<tr>
+<td>35</td>
+<td><strong>end</strong></td>
+</tr>
+</table>
+"))))))
+
 
 (ert-deftest creole-html ()
   "Test the HTML export end to end."
