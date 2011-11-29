@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.7.0
+;; Version: 0.7.1
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -36,6 +36,7 @@
 
 (require 'ert)
 (require 'htmlfontify)
+(require 'org-table)
 (eval-when-compile (require 'cl))
 
 (defgroup creole nil
