@@ -38,8 +38,9 @@ have. The tests are embedded in the code.
 
 == Extensions ==
 
-We support 1 extension over Creole right now, fontifying PRE sections
-with extra markup:
+We support a couple of extra extensions over Creole right now.
+
+We automatically fontifying PRE sections with extra markup:
 
 {{{
 ##! emacs-lisp
@@ -93,6 +94,18 @@ with extra markup:
       (setq docptr (cdr docptr)))
     result))
 }}}
+
+Instead of Creole tables, we actually use org-mode tables. Org-mode
+tables are very similar:
+
+|       Date | Amount | Description         |
+|------------+--------+---------------------|
+| 2011-11-15 | 100.15 | Expensive lunch out |
+| 2011-11-18 |   7.30 | Dry cleaning        |
+| 2011-11-21 |  22.50 | Takeaway curry      |
+|------------+--------+---------------------|
+|            | 129.95 |                     |
+#+TBLFM: @5$2=vsum(@I..@II)
 
 == Reuse ==
 
