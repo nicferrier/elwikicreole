@@ -27,8 +27,8 @@ and we don't handle some big things and all of what I'd call the exceptions:
 
 * not ending headings with an appropriate {{{=}}}
 * having whitespace before list items
-* no tables
 * no escapes
+* org-mode tables only
 
 == Tests ==
 
