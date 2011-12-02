@@ -1840,6 +1840,68 @@ doSomething();
 "))
 
 
+;; Useful functions
+
+(defun creole-directory-list (directory-name &optional make-links)
+  "WikiCreole format a table of files in DIRECTORY-NAME.
+
+MAKE-LINKS causes the files to be WikiCreole links."
+  (loop for filename in (directory-files directory-name)
+        if (not (or (equal filename ".")
+                    (equal filename "..")))
+        concat
+        (let* ((fq (expand-file-name filename directory-name))
+               (fa (file-attributes fq))
+               (timestr
+                (apply 'format
+                       "%04d-%02d-%02d %02d:%02d"
+                       (let ((dt (decode-time (elt fa 5))))
+                         (list (elt dt 5)
+                               (elt dt 4)
+                               (elt dt 3)
+                               (elt dt 2)
+                               (elt dt 1))))))
+          (format
+           "|%s|%s|%s|\n"
+           (if make-links
+               (format "[[%s]]" filename)
+             filename)
+           timestr
+           (elt fa 7)))))
+
+(ert-deftest creole-directory-list ()
+  (flet ((directory-files
+          (directory-name)
+          '("." ".." "file1.html" "file2.html"))
+         (file-attributes
+          (file-name)
+          (let ((t1 (encode-time 0 32 9 1 12 2011))
+                (t2 (encode-time 0 22 9 1 12 2011)))
+            (cond
+             ((string-match ".*/file1.html" file-name)
+              `(nil 1 "uid" "grp"
+                    ,t1 ,t1 ,t1
+                    200 "-rwxrwxrwx-" t
+                    1333331114234 0))
+             ((string-match ".*/file2.html" file-name)
+              `(nil 1 "uid" "grp"
+                    ,t2 ,t2 ,t2
+                    157 "-rwxrwxrwx-" t
+                    1333331114234 0))))))
+    (should
+     (equal
+      (creole-directory-list "~/mydirectory")
+      "|file1.html|2011-12-01 09:32|200|
+|file2.html|2011-12-01 09:22|157|
+"))
+    (should
+     (equal
+      (creole-directory-list "~/mydirectory" t)
+      "|[[file1.html]]|2011-12-01 09:32|200|
+|[[file2.html]]|2011-12-01 09:22|157|
+"))))
+
+
 (provide 'creole)
 
 ;;; creole.el ends here
