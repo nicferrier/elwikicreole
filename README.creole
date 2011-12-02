@@ -111,6 +111,17 @@ And this is what that would output:
    "\n")
 )>>
 
+It's my intention to build a few Lisp functions specifically for use
+inside the Lisp extension element. The first of these is:
+
+==== creole-directory-list directory-name &optional make-links ====
+
+WikiCreole format a table of files in //directory-name//.
+
+//make-links// causes the files to be WikiCreole links.
+
+
+
 == Reuse ==
 
 The code is designed to be reused in differing circumstances, it is split into:
