@@ -587,6 +587,8 @@ that runs over several lines")
         (ul "and a list item stops it")
         (para . "This is a paragraph {{{with code}}} and [[links]]"))))))
 
+;; Exporting functions
+
 (defun creole--html-list (type lst)
   "Export the specified LST in HTML.
 
