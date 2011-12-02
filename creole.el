@@ -757,8 +757,7 @@ possible to use the 'cadr' of the style to add colors."
                       (region-end))))
   (let (mode-func)
     (save-match-data
-      (if (progn
-            (string-match "^##! \\(.*\\)\n" text)
+      (if (when (string-match "^##! \\(.*\\)\n" text)
             (setq mode-func
                   (intern
                    (concat
@@ -808,7 +807,29 @@ possible to use the 'cadr' of the style to add colors."
                       (with-current-buffer htmlbuf
                         (set-buffer-modified-p nil))
                       (kill-buffer htmlbuf))
-                    result)))))))))
+                    result)))))
+        (concat "<pre>\n" text "\n</pre>")))))
+
+(ert-deftest creole-htmlize-string-null ()
+  "Test that a string with no markup does NOT get fontified."
+  (should
+   (equal
+    (creole-htmlize-string "<<(
+ (mapconcat
+   (lambda (s)
+     (format \"== %s ==\" s))
+   '(\"rationale\" \"compliance\" \"tests\")
+   \"\n\")
+)>>")
+    "<pre>
+<<(
+ (mapconcat
+   (lambda (s)
+     (format \"== %s ==\" s))
+   '(\"rationale\" \"compliance\" \"tests\")
+   \"\n\")
+)>>
+</pre>")))
 
 (ert-deftest creole-htmlize-string ()
   "Test that we can capture 'htmlfontify' into strings."

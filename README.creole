@@ -87,6 +87,29 @@ tables are very similar:
 When a table is exported to HTML it is recalculated, so you can use
 formulas quite happily. Formula lines are not exported to HTML.
 
+=== Lisp callouts ===
+
+You can call to EmacsLisp like this:
+
+{{{
+<<(
+ (mapconcat
+   (lambda (s)
+     (format "* %s" s))
+   '("rationale" "compliance" "tests")
+   "\n")
+)>>
+}}}
+
+And this is what that would output:
+
+<<(
+ (mapconcat
+   (lambda (s)
+     (format "* %s" s))
+   '("rationale" "compliance" "tests")
+   "\n")
+)>>
 
 == Reuse ==
 
