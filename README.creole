@@ -40,60 +40,37 @@ have. The tests are embedded in the code.
 
 We support a couple of extra extensions over Creole right now.
 
-We automatically fontifying PRE sections with extra markup:
+
+=== Syntax Coloring ===
+
+We automatically fontify PRE sections with extra markup:
 
 {{{
 ##! emacs-lisp
-(defun creole-structure (lst)
-  "Make a parsed structure from a list."
-  (let* ((docptr lst)
-         (state '()) ; used as a stack
-         (result '()))
-    (while docptr
-      (let* ((token (car docptr))
-             (lst-item (creole--list-item (car token))))
-        (case (if lst-item 'listitem (car token))
-          (listitem
-           (let* ((last (if (car state) (cdar state)))
-                  (last-level (if (car state) (caar state)))
-                  (new (list (car lst-item) (cdr token))))
-             (cond
-              ;; Current level is higher than the last, embed a new list
-              ((and last
-                    (> (cdr lst-item) last-level))
-               (setcdr last (append (cdr last) (list new)))
-               ;; Update the stack
-               (push (cons (cdr lst-item) new) state))
-              ;; Current level is same as the last, extend the last list
-              ((and last
-                    (= (cdr lst-item) last-level))
-               (setq new (list (cdr token)))
-               (setcdr last (append (cdr last) new))
-               ;; Reset the top of the stack
-               (pop state)
-               (push (cons (cdr lst-item) new) state))
-              ;; Current level is same as the last, extend the last list
-              ((and last
-                    (< (cdr lst-item) last-level))
-               (loop for i from 1 to (- last-level (cdr lst-item))
-                     do (pop state))
-               (let* ((last (if (car state) (cdar state)))
-                      (last-level (if (car state) (caar state))))
-                 (setq new (list (cdr token)))
-                 (setcdr last (append (cdr last) new))))
-              ;; The default action when we're dealing with lists
-              (t
-               (setq result (append result (list new)))
-               ;; Update the stack
-               (push (cons (cdr lst-item) new) state)))))
-          ;; Not a list item - just push it onto the result, always
-          ;; empty the list state
-          (t
-           (setq state '())
-           (setq result (append result (list token))))))
-      (setq docptr (cdr docptr)))
-    result))
+(defun creole-block-parse (text)
+  "Parses TEXT as a creole block.
+
+A creole block is a paragraph or list item that can include
+links, italic, bold, line break or inline preformatted markup.
+
+Returns a copy of TEXT with the WikiCreole replaced with
+appropriate HTML."
+  (replace-regexp-in-string
+   "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
+   "<strong>\\1</strong>"
+   (replace-regexp-in-string
+    "//\\(\\(.\\|\n\\)*\\)//"
+    "<em>\\1</em>"
+    (replace-regexp-in-string
+     "{{{\\(\\(.\\|\n\\)*\\)}}}"
+     "<code>\\1</code>"
+     (replace-regexp-in-string
+      "\\\\"
+      "<br/>"
+      (creole-link-parse text))))))
 }}}
+
+=== Org-Mode tables ===
 
 Instead of Creole tables, we actually use org-mode tables. Org-mode
 tables are very similar:
@@ -106,6 +83,10 @@ tables are very similar:
 |------------+--------+---------------------|
 |            | 129.95 |                     |
 #+TBLFM: @5$2=vsum(@I..@II)
+
+When a table is exported to HTML it is recalculated, so you can use
+formulas quite happily. Formula lines are not exported to HTML.
+
 
 == Reuse ==
 
