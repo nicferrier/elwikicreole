@@ -1088,6 +1088,20 @@ which was not under the docroot."
               (- (abs docroot-match-index) 1)
               (length true-name)))))))
 
+(defun creole--get-file (filename)
+  "An exception based FILENAME lookup.
+
+Either loads the FILENAME in a buffer (but does not select it) or
+errors 'file-error.
+
+The FILENAME is expanded and 'file-truename'd first."
+  (let ((file-path
+         (ignore-errors
+           (file-truename (expand-file-name filename)))))
+    (if (not (file-exists-p file-path))
+        (signal file-error (format "No such file %s" file-path))
+      (find-file-noselect file-path))))
+
 (defun creole--expand-item-value (item &optional docroot)
   "Expand ITEM to be a value.
 
@@ -1112,16 +1126,36 @@ and the 'cdr' being the expanded string."
               (cons :link path-info)
             ;; No workable docroot so return either the text of the
             ;; file (if it exists) or just the filename
-            (let ((fname (file-truename (expand-file-name item))))
-              (if (file-exists-p fname)
-                  (with-current-buffer (find-file-noselect fname)
-                    (cons :string
-                          (buffer-substring
-                           (point-min)
-                           (point-max))))
-                (cons :link item)))))
+            (condition-case err
+                (with-current-buffer (creole--get-file item)
+                  (cons :string
+                        (buffer-substring
+                         (point-min)
+                         (point-max))))
+              ;; FIXME - I'd like this to be file-error - why doesn't
+              ;; that work???
+              (error (cons :link item)))))
       ;; The item was not a file-name so just return it
       (cons :string item))))
+
+(ert-deftest creole--expand-item-value-mocked-file ()
+  "Test that we can mock the file loading."
+  (with-temp-buffer
+    (insert "= A very small creole file =\n")
+    (let ((file-buffer (current-buffer)))
+      ;; Mock both these functions to cause the buffer 'file-buffer'
+      ;; to be returned from creole--get-file
+      (flet ((creole--file-under-root-p
+              (file-name root)
+              nil)
+             (creole--get-file
+              (filename)
+              file-buffer))
+        (should (equal
+                 (cons :string "= A very small creole file =\n")
+                 (creole--expand-item-value
+                  "~/elwikicreole/README.creole"
+                  "~/elwikicreole/")))))))
 
 (ert-deftest creole--expand-item-value-plain-string ()
   ;; Should just be the value of the string
@@ -1132,7 +1166,7 @@ and the 'cdr' being the expanded string."
             "~/elwikicreole/"))))
 
 (ert-deftest creole--expand-item-value-safe-file ()
-  ;; Should be a linked file-name under the docroot
+  "Test that a file under the docroot is returned as just a file."
   (flet ((creole--file-under-root-p
           (file-name root)
           ;; TODO - implementation
@@ -1183,7 +1217,7 @@ and the 'cdr' being the expanded string."
         (cons :string "= A very small Creole document =\n")
         (creole--expand-item-value
          "~/elwikiengine/wiki/small.creole"
-         "~/eolwikicreole/"))))
+         "~/elwikicreole/"))))
     (kill-buffer TMPBUF)))
 
 (defun creole--wrap-buffer-text (start end &optional buffer)
@@ -1432,6 +1466,8 @@ recognize as a file.  A file-name is detected by a leading
 '~' (meaning expand from the user root) or '/' (meaning rooted)
 or './' (meaning expand from the root of the source creole file).
 
+If SOURCE is a filename it is loaded with 'creole--get-file.
+
 
 Keyword arguments are supported to change the way the HTML is
 produced.
@@ -1518,7 +1554,7 @@ All, any or none of these keys may be specified.
            ((bufferp source)
             source)
            ((string-match "^\\(./\\|/\\|~\\).*" source)
-            (find-file-noselect source))
+            (creole--get-file source))
            (t
             (with-current-buffer (get-buffer-create "* creole-source *")
               (insert source)
@@ -1668,6 +1704,33 @@ All, any or none of these keys may be specified.
     ;; Return the destination buffer
     html-buffer))
 
+(ert-deftest creole-wiki-file ()
+  "Test that a mocked file can be loaded as a Wiki file."
+  (with-temp-buffer
+    (insert "= A Creole Wiki file =
+
+This is a nice simple Creole Wiki file.
+")
+    (let ((creole-file-buffer (current-buffer)))
+      (flet ((creole--get-file
+              (filename)
+              creole-file-buffer))
+        (with-temp-buffer
+          (creole-wiki
+           "~/anyfilename"
+           :destination (current-buffer)
+           :htmlfontify-style nil)
+          (should
+           (equal
+            (buffer-substring-no-properties (point-min) (point-max))
+            "<html>
+<body>
+<h1>A Creole Wiki file</h1>
+<p>This is a nice simple Creole Wiki file.</p>
+</body>
+</html>
+")))))))
+
 (defmacro creole--wiki-test (creoletext htmltext &rest extras)
   "A helper macro for testing full HTML conversion.
 
@@ -1748,8 +1811,7 @@ This is a Creole document with some stuff in it.
 "))
 
 (ert-deftest creole-wiki-headers-footers ()
-
-  ;; Headers AND footers
+  "Test that specified headers and footers come out correctly."
   (creole--wiki-test
     "= A Creole Document =
 
@@ -1767,7 +1829,8 @@ This is a Creole document with some stuff in it.
     :body-header "<div id='header'>the header</div>\n"
     :body-footer "<div id='footer'>the footer</div>\n"))
 
-(ert-deftest creole-wiki-css ()
+(ert-deftest creole-wiki-css-link ()
+  "Test that a CSS under the docroot is linked not embedded."
   (flet ((creole--file-under-root-p
           (file-name root)
           "/styles.css"))
@@ -1787,8 +1850,14 @@ This is a Creole document with some stuff in it.
 </html>
 "
     :docroot "~/elwikicreole/"
-    :css "~/elwikicreole/styles.css"))
-  ;; Test non-docroot CSS
+    :css "~/elwikicreole/styles.css")))
+
+(ert-deftest creole-wiki-css-embed ()
+  "Test that strings are embedded for CSS when necessary."
+  (flet ((creole--file-under-root-p
+          (file-name root)
+          "/styles.css"))
+  ;; Test a string specified as the CSS is embedded
   (creole--wiki-test
     "= A Creole Document =
 
@@ -1808,10 +1877,48 @@ font-size: 8pt;
 </body>
 </html>
 "
+    ;; Here's the docroot
     :docroot "~/elwikicreole/"
+    ;; Here's a string specifying some CSS, clearly not a file
     :css "p {
 font-size: 8pt;
 }"))
+
+  ;; This version tests the full mocking causing embedding
+  (with-temp-buffer
+    (insert "P { background: blue; }")
+    (let ((css-file-buffer (current-buffer)))
+      ;; Mock the 2 functions so that the file is not considered under
+      ;; the docroot and so that it's contents if the CSS fragment
+      ;; above
+      (flet ((creole--file-under-root-p
+              (file-name root)
+              nil)
+             (creole--get-file
+              (filename)
+              css-file-buffer))
+        (creole--wiki-test
+          "= A Creole Document =
+
+This is a Creole document with some stuff in it.
+"
+    "<html>
+<head>
+<style>
+P { background: blue; }
+</style>
+</head>
+<body>
+<h1>A Creole Document</h1>
+<p>This is a Creole document with some stuff in it.</p>
+</body>
+</html>
+"
+    ;; Here's the docroot...
+    :docroot "~/elwikicreole/"
+    ;; ... here's a file clearly not under the docroot, so it should
+    ;; be embedded.
+    :css "~/someplace/styles.css")))))
 
 (ert-deftest creole-wiki-js ()
   (flet ((creole--file-under-root-p
