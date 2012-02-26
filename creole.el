@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8
+;; Version: 0.8.1
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -91,22 +91,27 @@ links, italic, bold, line break or inline preformatted markup.
 
 Returns a copy of TEXT with the WikiCreole replaced with
 appropriate HTML."
-  (replace-regexp-in-string
-   "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
-   "<strong>\\1</strong>"
+  (creole-link-parse
    (replace-regexp-in-string
-    "//\\(\\(.\\|\n\\)*\\)//"
-    "<em>\\1</em>"
+    "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
+    "<strong>\\1</strong>"
     (replace-regexp-in-string
-     "{{{\\(\\(.\\|\n\\)*\\)}}}"
-     "<code>\\1</code>"
+     ;; We need to handle the url case http:// should not start an EM match
+     ;;
+     ;; This would be better with lookbehind assertions, but we don't
+     ;; have those in Emacs yet.
+     "\\(^[^:]*\\|[^:]\\)//\\(\\(.\\|\n\\)*?\\)//"
+     "\\1<em>\\2</em>"
      (replace-regexp-in-string
-      "\\\\"
-      "<br/>"
-      (creole-link-parse text))))))
-
+      "{{{\\(\\(.\\|\n\\)*\\)}}}"
+      "<code>\\1</code>"
+      (replace-regexp-in-string
+       "\\\\"
+       "<br/>"
+       text))))))
 
 (ert-deftest creole-block-parse ()
+  "Test the block parsing routines."
   (should (equal "<strong>this is bold</strong>"
                  (creole-block-parse "**this is bold**")))
   (should (equal "<em>this is italic</em>"
@@ -127,6 +132,10 @@ appropriate HTML."
                  (creole-block-parse "[[thing|{{{some code}}}]]")))
   (should (equal "<a href='thing'>thing</a>"
                  (creole-block-parse "[[thing]]")))
+  (should (equal "<a href='http://thing'>http://thing</a>"
+                 (creole-block-parse "[[http://thing]]")))
+  (should (equal "<a href='http://thing'>http://thing</a>"
+                 (creole-block-parse "[[http://thing]]")))
   (should (equal "<a href='thing'>thing
 broken over lines</a>"
                  (creole-block-parse "[[thing|thing
@@ -698,6 +707,30 @@ difficult."
 </tr>
 </table>
 "))))
+
+(ert-deftest creole-html-with-links ()
+  (with-temp-buffer
+    (insert "= Heading! =\n")
+    (insert "This is a paragraph.\n\n")
+    (insert "This is a paragraph {{{with code}}} and [[links]]
+and **bold** and //italics//.\n\n")
+    (insert "This is a paragraph with [[http://absolute/links]]
+and **bold** and //italics//.\n\n")
+    (insert "This is a paragraph with [[http://absolute/links]]\n")
+    (let* ((html (creole-html (current-buffer)))
+           (htmlstr (with-current-buffer html
+                      (buffer-substring (point-min)(point-max)))))
+      (should
+       (equal
+        htmlstr
+        "<h1>Heading!</h1>
+<p>This is a paragraph.</p>
+<p>This is a paragraph <code>with code</code> and <a href='links'>links</a>
+and <strong>bold</strong> and <em>italics</em>.</p>
+<p>This is a paragraph with <a href='http://absolute/links'>http://absolute/links</a>
+and <strong>bold</strong> and <em>italics</em>.</p>
+<p>This is a paragraph with <a href='http://absolute/links'>http://absolute/links</a></p>
+")))))
 
 
 (defun creole-htmlize-string (text)
