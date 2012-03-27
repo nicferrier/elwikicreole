@@ -954,7 +954,7 @@ Returns the HTML-BUFFER."
              (get-buffer-create
               (replace-regexp-in-string
                "\\(\\**\\)\\(.*\\)\\(\\**\\)"
-               "*creolehtml-\\1*"
+               "*creolehtml-\\2*"
                (buffer-name
                 (if (bufferp docbuf)
                     docbuf
