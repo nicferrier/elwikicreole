@@ -103,7 +103,7 @@ appropriate HTML."
      ;;
      ;; This would be better with lookbehind assertions, but we don't
      ;; have those in Emacs yet.
-     "\\(^[^:]*\\|[^:]\\)//\\(\\(.\\|\n\\)*?\\)//"
+     "\\(^[^:]*\\|[^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
      "\\1<em>\\2</em>"
      (replace-regexp-in-string
       "{{{\\(\\(.\\|\n\\)*\\)}}}"
@@ -810,6 +810,7 @@ possible to use the 'cadr' of the style to add colors."
             (kill-line)
             ;; Now switch that mode into the new mode
             (funcall mode-func)
+            (whitespace-mode -1)
             (font-lock-fontify-buffer)
             ;; Do some dynamic binding magic to alter htmlfontify
             ;; behaviour - no header, no footer and the styles list is
