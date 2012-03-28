@@ -1503,7 +1503,7 @@ recognize as a file.  A file-name is detected by a leading
 '~' (meaning expand from the user root) or '/' (meaning rooted)
 or './' (meaning expand from the root of the source creole file).
 
-If SOURCE is a filename it is loaded with 'creole--get-file.
+If SOURCE is a filename it is loaded with `creole--get-file'.
 
 
 Keyword arguments are supported to change the way the HTML is
