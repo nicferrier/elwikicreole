@@ -106,7 +106,7 @@ appropriate HTML."
      "\\(^[^:]*\\|[^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
      "\\1<em>\\2</em>"
      (replace-regexp-in-string
-      "{{{\\(\\(.\\|\n\\)*\\)}}}"
+      "{{{\\(\\(.\\|\n\\)*?\\)}}}"
       "<code>\\1</code>"
       (replace-regexp-in-string
        "\\\\"
