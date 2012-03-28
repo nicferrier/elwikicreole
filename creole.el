@@ -1590,7 +1590,8 @@ elements, for example:
 All, any or none of these keys may be specified.
 "
   (interactive "fCreole file: ")
-  (let* ((source-buffer
+  (let* (file-opened ;; a flag to indicate whether we opened a file or not
+         (source-buffer
           ;; Detect what sort of source we have
           (cond
            ((bufferp source)
@@ -1736,12 +1737,15 @@ All, any or none of these keys may be specified.
        (creole--wrap-buffer-text "<html>\n" "</html>\n")))
 
     ;; Should we output the whole thing to the default output stream?
-    (if (eq destination t)
-        (with-current-buffer html-buffer
-          (princ (buffer-substring (point-min)(point-max)))))
+    (when (eq destination t)
+      (with-current-buffer html-buffer
+        (princ (buffer-substring (point-min)(point-max)))))
 
-    (if (called-interactively-p)
-        (switch-to-buffer html-buffer))
+    (when (called-interactively-p)
+      (switch-to-buffer html-buffer))
+
+    (when file-opened
+      (kill-buffer source-buffer))
 
     ;; Return the destination buffer
     html-buffer))
