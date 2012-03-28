@@ -919,7 +919,7 @@ If HTML-BUFFER does not exist then a buffer is created based on
 the name of DOCBUF. If DOCBUF doesn't have a name then the
 destination buffer is called:
 
- *creolehtml*
+ *creolehtml.html
 
 If RESULT-MODE is specified then the HTML-BUFFER is placed in
 that mode.
@@ -959,7 +959,7 @@ Returns the HTML-BUFFER."
              (get-buffer-create
               (replace-regexp-in-string
                "\\(\\**\\)\\(.*\\)\\(\\**\\)"
-               "*creolehtml-\\2*"
+               "*creolehtml\\2.html"
                (buffer-name
                 (if (bufferp docbuf)
                     docbuf
