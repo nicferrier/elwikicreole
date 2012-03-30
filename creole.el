@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.2
+;; Version: 0.8.3
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -1141,7 +1141,7 @@ The FILENAME is expanded and `file-truename'd first."
          (ignore-errors
            (file-truename (expand-file-name filename)))))
     (if (not (file-exists-p file-path))
-        (signal file-error (format "No such file %s" file-path))
+        (signal 'file-error (format "No such file %s" file-path))
       (find-file-noselect file-path))))
 
 (defun creole--expand-item-value (item &optional docroot)
@@ -1741,7 +1741,7 @@ All, any or none of these keys may be specified.
       (with-current-buffer html-buffer
         (princ (buffer-substring (point-min)(point-max)))))
 
-    (when (called-interactively-p)
+    (when (called-interactively-p 'any)
       (switch-to-buffer html-buffer))
 
     (when file-opened
