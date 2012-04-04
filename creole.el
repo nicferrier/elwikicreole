@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.3
+;; Version: 0.8.4
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -907,6 +907,9 @@ int main(char **argv, int argc)
             collect (car style-decl))
       css-decl-list))))
 
+(defvar creole-structured '()
+  "Contains the parsed creole.")
+
 (defun* creole-html (docbuf
                      &optional html-buffer
                      &key result-mode
@@ -947,6 +950,10 @@ the export is done.
 When called interactively RESULT-MODE is set to 'html-mode',
 ERASE-EXISTING is set to true and SWITCH-TO is set to true.
 
+The buffer local variable `creole-structured' is set on the
+HTML-BUFFER with the parsed creole in it.  See `creole-structure'
+for the details of that data structure.
+
 Returns the HTML-BUFFER."
   (interactive
    (list
@@ -964,6 +971,7 @@ Returns the HTML-BUFFER."
                 (if (bufferp docbuf)
                     docbuf
                   (get-buffer docbuf))))))))
+    (make-local-variable 'creole-structured)
     (let ((creole
            (creole-structure
             (creole-tokenize docbuf))))  ; Get the parsed creole doc
@@ -1006,7 +1014,8 @@ Returns the HTML-BUFFER."
                    (insert (format
                             "<p>%s</p>\n"
                             (creole-block-parse (cdr element))))))))
-        (if result-mode (call-interactively result-mode)))
+        (if result-mode (call-interactively result-mode))
+        (setq creole-structured creole))
       (if switch-to (switch-to-buffer result-buffer))
       result-buffer)))
 
@@ -1657,6 +1666,9 @@ All, any or none of these keys may be specified.
           (let (head-marker)
             (goto-char (point-min))
             (insert "<head>\n")
+            (let ((creole-doc-title (assoc 'heading1 creole-structured)))
+              (when creole-doc-title
+                (insert (format "<title>%s</title>\n" (cdr creole-doc-title)))))
             (setq head-marker (point-marker))
             (insert "</head>\n")
             (creole--insert-template
