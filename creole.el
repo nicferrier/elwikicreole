@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.4
+;; Version: 0.8.5
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -1899,6 +1899,7 @@ This is a Creole document with some stuff in it.
 "
     "<html>
 <head>
+<title>A Creole Document</title>
 <link rel='stylesheet' href='/styles.css' type='text/css'/>
 </head>
 <body>
@@ -1923,6 +1924,7 @@ This is a Creole document with some stuff in it.
 "
     "<html>
 <head>
+<title>A Creole Document</title>
 <style>
 p {
 font-size: 8pt;
@@ -1962,6 +1964,7 @@ This is a Creole document with some stuff in it.
 "
     "<html>
 <head>
+<title>A Creole Document</title>
 <style>
 P { background: blue; }
 </style>
@@ -1989,6 +1992,7 @@ This is a Creole document with some stuff in it.
 "
     "<html>
 <head>
+<title>A Creole Document</title>
 <script src='/scripts.js' language='Javascript'></script>
 </head>
 <body>
@@ -2006,6 +2010,7 @@ This is a Creole document with some stuff in it.
 "
     "<html>
 <head>
+<title>A Creole Document</title>
 <script>
 //<!--
 $(document).ready(function () {
