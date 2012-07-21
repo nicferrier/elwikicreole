@@ -99,19 +99,18 @@ appropriate HTML."
     "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
     "<strong>\\1</strong>"
     (replace-regexp-in-string
-     ;; We need to handle the url case http:// should not start an EM match
-     ;;
-     ;; This would be better with lookbehind assertions, but we don't
-     ;; have those in Emacs yet.
-     "\\(^[^:]*\\|[^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
+     "\\([^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
      "\\1<em>\\2</em>"
      (replace-regexp-in-string
-      "{{{\\(\\(.\\|\n\\)*?\\)}}}"
-      "<code>\\1</code>"
+      "^//\\(\\(.\\|\n\\)*?[^:]\\)//"
+      "<em>\\1</em>"
       (replace-regexp-in-string
-       "\\\\"
-       "<br/>"
-       text))))))
+       "{{{\\(\\(.\\|\n\\)*?\\)}}}"
+       "<code>\\1</code>"
+       (replace-regexp-in-string
+        "\\\\"
+        "<br/>"
+        text)))))))
 
 (ert-deftest creole-block-parse ()
   "Test the block parsing routines."
@@ -127,6 +126,25 @@ appropriate HTML."
                  (creole-block-parse "//**this is italic bold**//")))
   (should (equal "<strong><em>this is bold italic</em></strong>"
                  (creole-block-parse "**//this is bold italic//**")))
+  (should
+   (equal
+    (creole-block-parse "{{{this is code}}} and this is //italic//")
+    "<code>this is code</code> and this is <em>italic</em>"))
+  (should
+   (equal
+    (creole-block-parse
+     "this is //italic// and more //italics//")
+    "this is <em>italic</em> and more <em>italics</em>"))
+  (should
+   (equal
+    (creole-block-parse
+     "//test// http://server thing is //italic//")
+    "<em>test</em> http://server thing is <em>italic</em>"))
+  (should
+   (equal
+    (creole-block-parse
+     "http://server //test// http://server thing is //italic//")
+    "http://server <em>test</em> http://server thing is <em>italic</em>"))
   (should (equal "<a href='http://thing'>thing</a>"
                  (creole-block-parse "[[http://thing|thing]]")))
   (should (equal "<a href='thing'><strong>fing!</strong></a>"
