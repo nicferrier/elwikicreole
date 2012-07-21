@@ -1467,6 +1467,57 @@ POSITION."
   :group 'creole
   :type '(string))
 
+
+(defun creole--css-list-to-style-decl (css-list)
+  "Make the CSS-LIST into an HTML STYLE decl."
+  (mapconcat
+   (lambda (style)
+     (format
+      "span.%s   %s\nspan.%s a %s\n%s\n"
+      (cadr style) (cddr style)
+      (cadr style) (hfy-link-style (cddr style))
+      ;; Add in our own colors - just add nothing
+      ;; if we don't have customization for it
+      (condition-case err
+          (let ((css-value
+                 (symbol-value
+                  (intern
+                   (concat
+                    "creole-css-color-"
+                    (cadr style))))))
+            (if css-value
+                (format
+                 "span.%s { color: %s; }\n"
+                 (cadr style)
+                 css-value)))
+        (void-variable ""))))
+   css-list
+   "\n"))
+
+(ert-deftest creole-htmlize-css-lists ()
+  "Test that we can capture 'htmlfontify' css lists."
+  (let* ((css-decl-list ; this is a list of the CSS declarations there should be
+          '(default
+            font-lock-keyword-face
+            font-lock-variable-name-face
+            font-lock-function-name-face
+            font-lock-type-face))
+         ;; The actual program text we'll fontify
+         (fontified (creole-htmlize-string "##! c
+int main(char **argv, int argc)
+{
+  return 1;
+}
+"))
+         (style-decl
+          (creole--css-list
+           (get-text-property 0 :css-list fontified))))
+    (should (string-match "^span.keyword" style-decl))
+    (should (string-match "^span.default" style-decl))
+    (should (string-match "^span.variable-name" style-decl))
+    (should (string-match "^span.function-name" style-decl))
+    (should (string-match "^span.type" style-decl))))
+
 (defun creole-moustache (template variables)
   "Moustache replace in TEMPLATE with VARIABLES.
 
@@ -1509,6 +1560,36 @@ Eg:
      "<<{{text}}>>[[{{working-var}}]]"
      '((text . "this is a test")
        (working-var . "another test"))))))
+
+
+(defun creole-list-text-properties (buffer property predicate)
+  "List all the values for PROPERTY in BUFFER.
+
+PREDICATE is used to merge the properties."
+  (with-current-buffer buffer
+    (save-excursion
+      (goto-char (point-min))
+      (let* ((lst (list))
+             (p (next-single-property-change
+                 (point-min)
+                 :css-list
+                 (current-buffer)
+                 (point-max))))
+        (while (not (equal p (point-max)))
+          (let ((prop (get-text-property p property)))
+            (when prop
+              (setq lst
+                    (merge
+                     'list
+                     lst prop
+                     predicate))))
+            (goto-char (+ 1 p))
+            (setq p (next-single-property-change
+                     (point)
+                     property
+                     (current-buffer)
+                     (point-max))))
+          lst))))
 
 ;;;###autoload
 (defun* creole-wiki (source
@@ -1721,50 +1802,21 @@ All, any or none of these keys may be specified.
 
             ;; Find any styles that are embedded
             (if (and htmlfontify htmlfontify-style)
-                (save-excursion
-                  ;; This actually needs to be a loop of some sort - to
-                  ;; find the next change until there are no further
-                  ;; changes
-                  (let* ((p (next-single-property-change
-                             (point-min)
-                             :css-list
+                (let ((css (remove-duplicates
+                            (list-text-properties
                              (current-buffer)
-                             (point-max)))
-                         (css (get-text-property
-                               p
-                               :css-list
-                               (current-buffer))))
+                             :css-list
+                             (lambda (a b) (string< (cadr a) (cadr b))))
+                            :test (lambda (a b) (string= (cadr a) (cadr b))))))
                     (save-excursion
                       (goto-char head-marker)
                       (insert
                        "<style>\n"
-                       (mapconcat
-                        (lambda (style)
-                          (format
-                           "span.%s   %s\nspan.%s a %s\n%s\n"
-                           (cadr style) (cddr style)
-                           (cadr style) (hfy-link-style (cddr style))
-                           ;; Add in our own colors - just add nothing
-                           ;; if we don't have customization for it
-                           (condition-case err
-                               (let ((css-value
-                                      (symbol-value
-                                       (intern
-                                        (concat
-                                         "creole-css-color-"
-                                         (cadr style))))))
-                                 (if css-value
-                                     (format
-                                      "span.%s { color: %s; }\n"
-                                      (cadr style)
-                                      css-value)))
-                             (void-variable ""))))
-                        css
-                        "\n")
-                       "\n</style>\n")))))))
+                       (creole--css-list-to-style-decl css)
+                       "\n</style>\n"))))))
 
-       ;; Wrap the whole thing in the HTML tag
-       (creole--wrap-buffer-text "<html>\n" "</html>\n")))
+        ;; Wrap the whole thing in the HTML tag
+        (creole--wrap-buffer-text "<html>\n" "</html>\n")))
 
     ;; Should we output the whole thing to the default output stream?
     (when (eq destination t)
