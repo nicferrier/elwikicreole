@@ -1803,7 +1803,7 @@ All, any or none of these keys may be specified.
             ;; Find any styles that are embedded
             (if (and htmlfontify htmlfontify-style)
                 (let ((css (remove-duplicates
-                            (list-text-properties
+                            (creole-list-text-properties
                              (current-buffer)
                              :css-list
                              (lambda (a b) (string< (cadr a) (cadr b))))
