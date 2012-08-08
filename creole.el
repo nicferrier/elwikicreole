@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.10
+;; Version: 0.8.11
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -674,10 +674,11 @@ We use `orgtbl-to-generic' to do this."
           (list
            :tstart "<table>"
            :tend "</table>\n"
-           :hlstart "<th>\n"
-           :hlend "</th>"
-           :hllstart "<th>\n"
-           :hllend "</th>"
+           :hlstart "<thead><tr>\n"
+           :hlend "</tr></thead>"
+           :hllstart "<thead><tr>\n"
+           :hllend "</tr></thead>"
+           :hfmt "<th>%s</th>\n"
            :lstart "<tr>\n"
            :lend "</tr>"
            :hline nil
