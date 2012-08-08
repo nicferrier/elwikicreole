@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.7
+;; Version: 0.8.8
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -843,7 +843,8 @@ possible to use the `cadr' of the style to add colors."
                       (css file)
                       (setq css-list css)
                       ""))
-                (let ((hfy-page-footer
+                (let ((hfy-display-class '((type x-toolkit)))
+                      (hfy-page-footer
                        (lambda (&optional file-name)
                          "")))
                   (let (result
