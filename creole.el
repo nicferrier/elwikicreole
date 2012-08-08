@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.8
+;; Version: 0.8.9
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -1538,7 +1538,9 @@ Eg:
        (if pair
            (cdr pair)
          (concat "{{" expansion "}}"))))
-   template))
+   template
+   nil
+   t))
 
 (ert-deftest creole-moustache ()
   "Test the moustache templating."
