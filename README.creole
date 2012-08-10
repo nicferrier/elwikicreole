@@ -120,6 +120,18 @@ WikiCreole format a table of files in //directory-name//.
 
 //make-links// causes the files to be WikiCreole links.
 
+=== HTML ===
+
+You can embed HTML directly into this Creole implementation, using a
+plugin, like this:
+
+<<html
+<P>This is HTML which is just embedded <EM>directly</EM> into 
+the output.<BR/>
+You obviously have to be really <u>careful</u> you don't 
+break the output.</P>
+html>>
+
 
 == Reuse ==
 
