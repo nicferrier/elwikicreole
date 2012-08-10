@@ -262,6 +262,16 @@ Returns a list of parsed elements."
                                     (creole-tokenize (current-buffer)))))
             (setq res (append res plugin-fragment)))
           (forward-line))
+         (;; HTML-plugin
+          (looking-at "^\n<<html$")
+          (if (not
+               (re-search-forward
+                "^\n<<html\n\\(\\(.\\|\n\\)*?\\)\nhtml>>$" nil t))
+              (error "Creole: bad HTML plugin block"))
+          (setq res (append res
+                            (list
+                             (cons 'plugin-html (match-string 1)))))
+          (forward-line))
          (;; Paragraph line
           (and (looking-at "^[^=*]")
                (not (looking-at "^$")))
@@ -376,6 +386,19 @@ This is a paragraph {{{with code}}} and [[links]]"))
             '((heading1 . "Heading!")
               (heading2 . "Plugin Heading!")
               (para . "This is a paragraph {{{with code}}} and [[links]]")))))))
+
+(ert-deftest creole-tokenize-plugin-html ()
+  "Test the embedded HTML stuff"
+  (with-temp-buffer
+    (insert "= Heading! =\n")
+    (insert "\n<<html\n<P>A test of HTML code</P>\nhtml>>\n")
+    (insert "\n{{{\nsome code\n}}}\n")
+    (should
+     (equal
+      (creole-tokenize (current-buffer))
+      '((heading1 . "Heading!")
+        (plugin-html . "<P>A test of HTML code</P>")
+        (preformatted . "some code"))))))
 
 (ert-deftest creole-tokenize ()
   (with-temp-buffer
@@ -1028,6 +1051,9 @@ Returns the HTML-BUFFER."
                            "<pre>\n%s\n</pre>\n"
                            (cdr element)))
                        (insert styled))))
+                  ;; Just embed any HTML
+                  (plugin-html
+                   (insert (cdr element)))
                   (hr
                    (insert "<hr/>\n"))
                   (para
@@ -1038,6 +1064,21 @@ Returns the HTML-BUFFER."
         (setq creole-structured creole))
       (if switch-to (switch-to-buffer result-buffer))
       result-buffer)))
+
+(ert-deftest creole-plugin-html-to-html ()
+  "Test raw HTML exports correctly."
+  (with-temp-buffer
+    (insert "= Heading =
+
+<<html
+<P>This is a paragraph of text</P>
+html>>
+")
+    (let ((html (creole-html (current-buffer))))
+      (with-current-buffer html
+        (goto-char (point-min))
+        (should (looking-at "<h1>Heading</h1>
+<P>This is a paragraph of text</P>"))))))
 
 (ert-deftest creole-list-to-html ()
   "Test lists (which are a little complicated) export correctly."
