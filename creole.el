@@ -1,11 +1,11 @@
 ;;; creole.el --- A parser for the Creole Wiki language
 
-;;; Copyright (C) 2011 by Nic Ferrier
+;;; Copyright (C) 2011, 2012 by Nic Ferrier
 
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.12
+;; Version: 0.8.14
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -738,10 +738,10 @@ difficult."
      (equal
       (creole--html-table tbl)
       "<table>
-<th>
-<td>col1</td>
-<td>col2</td>
-</th>
+<thead><tr>
+<th>col1</th>
+<th>col2</th>
+</tr></thead>
 <tr>
 <td>15</td>
 <td>20</td>
@@ -1109,10 +1109,10 @@ html>>
       (with-current-buffer html
         (goto-char (point-min))
         (should (looking-at "<table>
-<th>
-<td>col1</td>
-<td>col2</td>
-</th>
+<thead><tr>
+<th>col1</th>
+<th>col2</th>
+</tr></thead>
 <tr>
 <td>15</td>
 <td>20</td>
@@ -1553,7 +1553,7 @@ int main(char **argv, int argc)
 }
 "))
          (style-decl
-          (creole--css-list
+          (creole--css-list-to-style-decl
            (get-text-property 0 :css-list fontified))))
     (should (string-match "^span.keyword" style-decl))
     (should (string-match "^span.default" style-decl))
@@ -1709,7 +1709,7 @@ templates and expanded before being inserted.  See
   text - the creole source text of the page
 
 or any variable in VARIABLES, which is an alist of
-symbols->values.
+symbols -> values.
 
 DOCROOT - base any files to be served.  Any file-name reference
 for CSS or JavaScript, if residing under this docroot, will be
