@@ -73,6 +73,7 @@ links."
           (match-string 1 m)))))))
    text))
 
+
 (ert-deftest creole-link-parse ()
   (should (equal "<a href='http://thing'>thing</a>"
                  (creole-link-parse "[[http://thing|thing]]")))
@@ -84,6 +85,37 @@ links."
 broken over lines</a>"
                  (creole-link-parse "[[thing|thing
 broken over lines]]"))))
+
+
+(defun creole-image-parse (text)
+  "Parse TEXT for creole images.
+
+Images should have this format:
+
+{{image.jpg?size=50x100|description}}
+
+where the size and description is optional, and the second
+dimension in size can be omitted.
+"
+  (replace-regexp-in-string
+   "{{\\([^?|]+\\)\\(\\?\\([^?|]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
+   (lambda (m)
+     (apply
+      'format
+      (append
+       '("<img src='%s' alt='%s' %s />")
+       (cond
+        ;; We have both a url and a link
+        ((match-string 3 m)
+         (list
+          (match-string 1 m)
+          (match-string 4 m)))
+        ;; We only have a url
+        ((match-string 1 m)
+         (list
+          (match-string 1 m)
+          (match-string 1 m)))))))
+   text))
 
 
 (defun creole-block-parse (text)
