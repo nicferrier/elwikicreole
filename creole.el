@@ -96,6 +96,11 @@ Images should have this format:
 
 where the size and description is optional, and the second
 dimension in size can be omitted.
+
+The 'size=' is optional, and I keep there because this way you
+could add more parameters to the image if you needed them. By
+now, a size is supposed, and the values are assumed to be either
+a Width, or a WidthxHeight specification.
 "
   (replace-regexp-in-string
    "{{\\([^?|]+\\)\\(\\?\\([^?|]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
@@ -104,19 +109,41 @@ dimension in size can be omitted.
       'format
       (append
        '("<img src='%s' alt='%s' %s />")
-       (cond
-        ;; We have both a url and a link
-        ((match-string 3 m)
-         (list
-          (match-string 1 m)
-          (match-string 4 m)))
-        ;; We only have a url
-        ((match-string 1 m)
-         (list
-          (match-string 1 m)
-          (match-string 1 m)))))))
+       ;; URL of the image
+       (list
+        (match-string 1 m)
+        ;; if we don't have an alternate, use the URL
+        (if (match-string 4 m)
+           (match-string 5 m)
+          (match-string 1 m))
+        ;; Match only the size part for now
+        (if (match-string 2 m)
+            (let ((options (match-string 3 m)))
+              (save-match-data
+                ;; 'size=' is optional and is the only parameter right now
+                (string-match "\\([0-9]+\\)\\(x\\([0-9]+\\)\\)?" options)
+                (when (match-string 1 options)
+                  (concat
+                   "width='" (match-string 1 options) "'"
+                   (when (match-string 2 options)
+                     (concat " height='" (match-string 3 options) "'"))))))
+          "")))))
    text))
 
+
+(ert-deftest creole-image-parse ()
+  (should (equal "<img src='image.jpg' alt='whatever I tell you' width='20' height='1000' />"
+                 (creole-image-parse "{{image.jpg?size=20x1000|whatever I tell you}}")))
+  (should (equal "<img src='image.jpg' alt='image.jpg'  />"
+                 (creole-image-parse "{{image.jpg}}")))
+  (should (equal "<img src='image.jpg' alt='alternate text'  />"
+                 (creole-image-parse "{{image.jpg|alternate text}}")))
+  (should (equal "<img src='image.jpg' alt='image.jpg' width='20' />"
+                 (creole-image-parse "{{image.jpg?size=20}}")))
+  (should (equal "<img src='image.jpg' alt='alternate text' width='20' />"
+                 (creole-image-parse "{{image.jpg?size=20|alternate text}}")))
+  (should (equal "<img src='image.jpg' alt='image.jpg' width='20' height='10' />"
+                 (creole-image-parse "{{image.jpg?size=20x10}}"))))
 
 (defun creole-block-parse (text)
   "Parses TEXT as a creole block.
@@ -126,23 +153,24 @@ links, italic, bold, line break or inline preformatted markup.
 
 Returns a copy of TEXT with the WikiCreole replaced with
 appropriate HTML."
-  (creole-link-parse
-   (replace-regexp-in-string
-    "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
-    "<strong>\\1</strong>"
+  (creole-image-parse
+   (creole-link-parse
     (replace-regexp-in-string
-     "\\([^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
-     "\\1<em>\\2</em>"
+     "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
+     "<strong>\\1</strong>"
      (replace-regexp-in-string
-      "^//\\(\\(.\\|\n\\)*?[^:]\\)//"
-      "<em>\\1</em>"
+      "\\([^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
+      "\\1<em>\\2</em>"
       (replace-regexp-in-string
-       "{{{\\(\\(.\\|\n\\)*?\\)}}}"
-       "<code>\\1</code>"
+       "^//\\(\\(.\\|\n\\)*?[^:]\\)//"
+       "<em>\\1</em>"
        (replace-regexp-in-string
-        "\\\\"
-        "<br/>"
-        text)))))))
+        "{{{\\(\\(.\\|\n\\)*?\\)}}}"
+        "<code>\\1</code>"
+        (replace-regexp-in-string
+         "\\\\"
+         "<br/>"
+         text))))))))
 
 (ert-deftest creole-block-parse ()
   "Test the block parsing routines."
