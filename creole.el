@@ -188,6 +188,10 @@ appropriate HTML."
                  (creole-block-parse "**//this is bold italic//**")))
   (should
    (equal
+    (creole-block-parse "**this is bold** this is not **but this is**")
+    "<strong>this is bold</strong> this is not <strong>but this is</strong>"))
+  (should
+   (equal
     (creole-block-parse "{{{this is code}}} and this is //italic//")
     "<code>this is code</code> and this is <em>italic</em>"))
   (should
