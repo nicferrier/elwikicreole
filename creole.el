@@ -1098,6 +1098,10 @@ Returns the HTML-BUFFER."
                    (insert (format "<h2>%s</h2>\n" (cdr element))))
                   (heading3
                    (insert (format "<h3>%s</h3>\n" (cdr element))))
+                  (heading4
+                   (insert (format "<h4>%s</h4>\n" (cdr element))))
+                  (heading5
+                   (insert (format "<h5>%s</h5>\n" (cdr element))))
                   ;; Tables
                   (table
                    (insert (creole--html-table (cdr element))))
