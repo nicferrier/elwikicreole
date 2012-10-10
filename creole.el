@@ -156,7 +156,7 @@ appropriate HTML."
   (creole-image-parse
    (creole-link-parse
     (replace-regexp-in-string
-     "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
+     "\\*\\*\\(\\(.\\|\n\\)*?\\)\\*\\*"
      "<strong>\\1</strong>"
      (replace-regexp-in-string
       "\\([^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
