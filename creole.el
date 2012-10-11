@@ -54,7 +54,7 @@ In the future we need to have some sort of resolution system here?
 Possibly it would be good to orthongonaly update some list of
 links."
   (replace-regexp-in-string
-   "\\[\\[\\(\\([A-Za-z]+:\\)*[^|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
+   "\\[\\[\\(\\([A-Za-z]+:\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
    (lambda (m)
      (apply
       'format
@@ -103,7 +103,7 @@ now, a size is supposed, and the values are assumed to be either
 a Width, or a WidthxHeight specification.
 "
   (replace-regexp-in-string
-   "{{\\([^?|]+\\)\\(\\?\\([^?|]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
+   "{{\\([^?|}]+\\)\\(\\?\\([^?|}]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
    (lambda (m)
      (apply
       'format
