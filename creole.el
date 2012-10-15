@@ -1812,7 +1812,7 @@ All, any or none of these keys may be specified.
            ((string-match "^\\(./\\|/\\|~\\).*" source)
             (creole--get-file source))
            (t
-            (with-current-buffer (get-buffer-create "* creole-source *")
+            (with-current-buffer (generate-new-buffer "* creole-source *")
               (insert source)
               (current-buffer)))))
          (html-buffer
