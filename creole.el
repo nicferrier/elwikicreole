@@ -1743,7 +1743,7 @@ with a line stating the Emacs mode to fontify the text as; for
 example:
 
  {{{
- emacs-lisp
+ ##! emacs-lisp
  (let ((x 1)) x)
  }}}
 
