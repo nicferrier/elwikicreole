@@ -1751,7 +1751,7 @@ with a line stating the Emacs mode to fontify the text as; for
 example:
 
  {{{
- emacs-lisp
+ ##! emacs-lisp
  (let ((x 1)) x)
  }}}
 
@@ -1820,7 +1820,7 @@ All, any or none of these keys may be specified.
            ((string-match "^\\(./\\|/\\|~\\).*" source)
             (creole--get-file source))
            (t
-            (with-current-buffer (get-buffer-create "* creole-source *")
+            (with-current-buffer (generate-new-buffer "* creole-source *")
               (insert source)
               (current-buffer)))))
          (html-buffer
