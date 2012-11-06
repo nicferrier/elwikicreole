@@ -1409,7 +1409,8 @@ the end of the BUFFER."
                                 position
                                 docroot
                                 link-template
-                                embed-template)
+                                embed-template
+                                &optional docroot-alias)
   "Insert either the LINK-TEMPLATE or the EMBED-TEMPLATE.
 
 KEY specifies a value that is expanded with
@@ -1417,7 +1418,10 @@ KEY specifies a value that is expanded with
 
 Whether we're a :link or a :string will cause either the
 LINK-TEMPLATE or the EMBED-TEMPLATE to be inserted at the marker
-POSITION."
+POSITION.
+
+If DOCROOT-ALIAS is specified and the :link template is used then
+the filename is concatenated with that."
   (save-excursion
     (when key
       (goto-char position)
@@ -1425,7 +1429,11 @@ POSITION."
         (case (car value)
           (:link
            (insert
-            (format link-template (cdr value))))
+            (format
+             link-template
+             (if docroot-alias
+                 (concat docroot-alias (cdr value))
+                 (cdr value)))))
           (:string
            (insert
             (format embed-template (cdr value)))))))))
@@ -1706,6 +1714,7 @@ PREDICATE is used to merge the properties."
                      body-footer
                      variables
                      docroot
+                     docroot-alias
                      css
                      javascript
                      meta
@@ -1774,6 +1783,9 @@ symbols -> values.
 DOCROOT - base any files to be served.  Any file-name reference
 for CSS or JavaScript, if residing under this docroot, will be
 linked to the document rather than embedded.
+
+DOCROOT-ALIAS - is the docroot path to use in any links as an
+alias for the docroot.
 
 CSS - a list of cascading style sheets, each entry can either be
 a file-name (a file-name is detected in the same way as
@@ -1875,23 +1887,30 @@ All, any or none of these keys may be specified.
                 (insert (format "<title>%s</title>\n" (cdr creole-doc-title)))))
             (setq head-marker (point-marker))
             (insert "</head>\n")
-            (creole--insert-template
-             css
-             head-marker
-             docroot
-             "<link rel='stylesheet' href='%s' type='text/css'/>\n"
-             "<style>\n%s\n</style>\n")
-            (creole--insert-template
-             javascript
-             head-marker
-             docroot
-             "<script src='%s' language='Javascript'></script>\n"
-             "<script>
+            ;; First the CSS
+            (loop for ss in css
+               do (creole--insert-template
+                   ss
+                   head-marker
+                   docroot
+                   "<link rel='stylesheet' href='%s' type='text/css'/>\n"
+                   "<style>\n%s\n</style>\n"
+                   docroot-alias))
+            ;; Now the JS
+            (loop for js in javascript
+               do (creole--insert-template
+                   javascript
+                   head-marker
+                   docroot
+                   "<script src='%s' language='Javascript'></script>\n"
+                   "<script>
 //<!--
 %s
 //-->
 </script>
-")
+"
+                   docroot-alias))
+            ;; Now meta
             (creole--insert-template
              meta
              head-marker
