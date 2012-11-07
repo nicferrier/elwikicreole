@@ -86,6 +86,8 @@ broken over lines</a>"
                  (creole-link-parse "[[thing|thing
 broken over lines]]"))))
 
+(defvar creole-image-class nil
+  "A default class to be applied to wiki linked images.")
 
 (defun creole-image-parse (text)
   "Parse TEXT for creole images.
@@ -105,29 +107,34 @@ a Width, or a WidthxHeight specification.
   (replace-regexp-in-string
    "{{\\([^?|]+\\)\\(\\?\\([^?|]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
    (lambda (m)
-     (apply
-      'format
-      (append
-       '("<img src='%s' alt='%s' %s />")
-       ;; URL of the image
-       (list
-        (match-string 1 m)
-        ;; if we don't have an alternate, use the URL
-        (if (match-string 4 m)
-           (match-string 5 m)
-          (match-string 1 m))
-        ;; Match only the size part for now
-        (if (match-string 2 m)
-            (let ((options (match-string 3 m)))
-              (save-match-data
-                ;; 'size=' is optional and is the only parameter right now
-                (string-match "\\([0-9]+\\)\\(x\\([0-9]+\\)\\)?" options)
-                (when (match-string 1 options)
-                  (concat
-                   "width='" (match-string 1 options) "'"
-                   (when (match-string 2 options)
-                     (concat " height='" (match-string 3 options) "'"))))))
-          "")))))
+     (let (title)
+       (apply
+        'format
+        (append
+         '("<img %s src='%s' alt='%s' %s %s />")
+         (list
+          ;; Whether we have a class to apply or not
+          (if creole-image-class (format "class='%s'" creole-image-class) "")
+          ;; URL of the image
+          (match-string 1 m)
+          ;; if we don't have an alternate, use the URL
+          (if (match-string 4 m)
+              (setq title (match-string 5 m))
+              (match-string 1 m))
+          ;; title
+          (if title (format "title='%s' " title) "")
+          ;; Match only the size part for now
+          (if (match-string 2 m)
+              (let ((options (match-string 3 m)))
+                (save-match-data
+                  ;; 'size=' is optional and is the only parameter right now
+                  (string-match "\\([0-9]+\\)\\(x\\([0-9]+\\)\\)?" options)
+                  (when (match-string 1 options)
+                    (concat
+                     "width='" (match-string 1 options) "'"
+                     (when (match-string 2 options)
+                       (concat " height='" (match-string 3 options) "'"))))))
+              ""))))))
    text))
 
 
