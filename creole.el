@@ -54,7 +54,7 @@ In the future we need to have some sort of resolution system here?
 Possibly it would be good to orthongonaly update some list of
 links."
   (replace-regexp-in-string
-   "\\[\\[\\(\\([A-Za-z]+:\\)*[^|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
+   "\\[\\[\\(\\([A-Za-z]+:\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
    (lambda (m)
      (apply
       'format
@@ -105,7 +105,7 @@ now, a size is supposed, and the values are assumed to be either
 a Width, or a WidthxHeight specification.
 "
   (replace-regexp-in-string
-   "{{\\([^?|]+\\)\\(\\?\\([^?|]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
+   "{{\\([^?|}]+\\)\\(\\?\\([^?|}]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
    (lambda (m)
      (let (title)
        (apply
@@ -163,7 +163,7 @@ appropriate HTML."
   (creole-image-parse
    (creole-link-parse
     (replace-regexp-in-string
-     "\\*\\*\\(\\(.\\|\n\\)*\\)\\*\\*"
+     "\\*\\*\\(\\(.\\|\n\\)*?\\)\\*\\*"
      "<strong>\\1</strong>"
      (replace-regexp-in-string
       "\\([^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
@@ -193,6 +193,10 @@ appropriate HTML."
                  (creole-block-parse "//**this is italic bold**//")))
   (should (equal "<strong><em>this is bold italic</em></strong>"
                  (creole-block-parse "**//this is bold italic//**")))
+  (should
+   (equal
+    (creole-block-parse "**this is bold** this is not **but this is**")
+    "<strong>this is bold</strong> this is not <strong>but this is</strong>"))
   (should
    (equal
     (creole-block-parse "{{{this is code}}} and this is //italic//")
@@ -1106,6 +1110,10 @@ Returns the HTML-BUFFER."
                    (insert (format "<h2>%s</h2>\n" (cdr element))))
                   (heading3
                    (insert (format "<h3>%s</h3>\n" (cdr element))))
+                  (heading4
+                   (insert (format "<h4>%s</h4>\n" (cdr element))))
+                  (heading5
+                   (insert (format "<h5>%s</h5>\n" (cdr element))))
                   ;; Tables
                   (table
                    (insert (creole--html-table (cdr element))))
