@@ -231,132 +231,133 @@ on WikiCreole.
 
 Returns a list of parsed elements."
   (with-current-buffer docbuf
-    (goto-char (point-min))
-    (let ((res '()))
-      (while (not (eobp))
-        (cond
-         (;; Heading
-          (looking-at "^\\(=+\\)[ \t]")
-          (let ((level (length (match-string 1))))
-            ;; Actually, the end = is optional... not sure if, when
-            ;; there is an end = it has to be the same number as the
-            ;; first one
-            (if (not
-                 (re-search-forward
-                  "^\\(=+\\)[ \t]+\\(.*\\)[ \t]+\\(=+\\)$" nil 't))
-                (error "Creole: badly formatted heading"))
-            (when (equal (length (match-string 3))
-                         level)
-              (setq res (append res
-                                (list
-                                 (cons
-                                  (intern (format "heading%s" level))
-                                  ;; The string that is the heading
-                                  ;; - any internal rules we should
-                                  ;; deal with here
-                                  (match-string 2)))))
-              (forward-line))))
-         (;; Table
-          (looking-at "^|")
-          ;; Requires that we're back in the table
-          (org-table-recalculate t)
-          (let* ((tbl (org-table-to-lisp))
-                 (pt (org-table-end)))
-            (setq res (append
-                       res
-                       (list
-                        (cons 'table tbl))))
-            (goto-char pt)
-            ;; Skip forward over any org-tbl comments
-            (unless (re-search-forward "^[^#]" nil t)
-              (goto-char (point-max)))
-            (beginning-of-line)))
-         (;; Unordered list item
-          (looking-at "^\\(\\*+\\)[ \t]\\(.*\\)")
-          (let ((level (length (match-string 1))))
-            (setq res (append res
-                              (list
-                               (cons
-                                (intern (format "ul%s" level))
-                                ;; The string that is the heading
-                                ;; - any internal rules we should
-                                ;; deal with here
-                                (match-string 2)))))
-            (forward-line)))
-         (;; Ordered list item
-          (looking-at "^\\(#+\\)[ \t]\\(.*\\)")
-          (let ((level (length (match-string 1))))
-            (setq res (append res
-                              (list
-                               (cons
-                                (intern (format "ol%s" level))
-                                ;; The string that is the heading
-                                ;; - any internal rules we should
-                                ;; deal with here
-                                (match-string 2)))))
-            (forward-line)))
-         (;; Horizontal rule
-          (looking-at "^[ \t]*----[ \t]*$")
-          (setq res (append res
-                            (list
-                             (cons 'hr ""))))
-          (forward-line))
-         (;; Pre-formatted block
-          (looking-at "^\n{{{$")
-          (if (not
-               (re-search-forward "^\n{{{\n\\(\\(.\\|\n\\)*?\\)\n}}}$" nil t))
-              (error "Creole: bad preformatted block"))
-          (setq res (append res
-                              (list
-                               (cons 'preformatted (match-string 1)))))
-          (forward-line))
-         (;; Lisp-plugin
-          (looking-at "^\n<<($")
-          (if (not
-               (re-search-forward "^\n<<(\n\\(\\(.\\|\n\\)*?\\)\n)>>$" nil t))
-              (error "Creole: bad Lisp plugin block"))
-          (let* ((plugin-lisp (match-string 1))
-                 (value (eval (car (read-from-string plugin-lisp))))
-                 (plugin-fragment (with-temp-buffer
-                                    (insert value)
-                                    (creole-tokenize (current-buffer)))))
-            (setq res (append res plugin-fragment)))
-          (forward-line))
-         (;; HTML-plugin
-          (looking-at "^\n<<html$")
-          (if (not
-               (re-search-forward
-                "^\n<<html\n\\(\\(.\\|\n\\)*?\\)\nhtml>>$" nil t))
-              (error "Creole: bad HTML plugin block"))
-          (setq res (append res
-                            (list
-                             (cons 'plugin-html (match-string 1)))))
-          (forward-line))
-         (;; Paragraph line
-          (and (looking-at "^[^=*]")
-               (not (looking-at "^$")))
-          (let* ((start (point))
-                 (end
-                  (save-match-data
-                    (let* ((matched-end
-                            ;; Find the end - the end is actually BEFORE this
-                            (re-search-forward "\\(^$\\)\\|\\(^[=*]\\)" nil 't))
-                           (matched (if matched-end (match-string 0))))
-                      (cond
-                       ((equal matched "") (- matched-end 1))
-                       ((equal matched "*") (- matched-end 2))
-                       ((equal matched "=") (- matched-end 2))
-                       (t
-                        (point-max)))))))
-            (setq res
-                  (append
-                   res
-                   (list
-                    (cons 'para (buffer-substring start end)))))
-            (goto-char end)))
-         ('t
-          (forward-line))))
-      res)))
+    (save-excursion
+      (goto-char (point-min))
+      (let ((res '()))
+        (while (not (eobp))
+          (cond
+            (;; Heading
+             (looking-at "^\\(=+\\)[ \t]")
+             (let ((level (length (match-string 1))))
+               ;; Actually, the end = is optional... not sure if, when
+               ;; there is an end = it has to be the same number as the
+               ;; first one
+               (if (not
+                    (re-search-forward
+                     "^\\(=+\\)[ \t]+\\(.*\\)[ \t]+\\(=+\\)$" nil 't))
+                   (error "Creole: badly formatted heading"))
+               (when (equal (length (match-string 3))
+                            level)
+                 (setq res (append res
+                                   (list
+                                    (cons
+                                     (intern (format "heading%s" level))
+                                     ;; The string that is the heading
+                                     ;; - any internal rules we should
+                                     ;; deal with here
+                                     (match-string 2)))))
+                 (forward-line))))
+            (;; Table
+             (looking-at "^|")
+             ;; Requires that we're back in the table
+             (org-table-recalculate t)
+             (let* ((tbl (org-table-to-lisp))
+                    (pt (org-table-end)))
+               (setq res (append
+                          res
+                          (list
+                           (cons 'table tbl))))
+               (goto-char pt)
+               ;; Skip forward over any org-tbl comments
+               (unless (re-search-forward "^[^#]" nil t)
+                 (goto-char (point-max)))
+               (beginning-of-line)))
+            (;; Unordered list item
+             (looking-at "^\\(\\*+\\)[ \t]\\(.*\\)")
+             (let ((level (length (match-string 1))))
+               (setq res (append res
+                                 (list
+                                  (cons
+                                   (intern (format "ul%s" level))
+                                   ;; The string that is the heading
+                                   ;; - any internal rules we should
+                                   ;; deal with here
+                                   (match-string 2)))))
+               (forward-line)))
+            (;; Ordered list item
+             (looking-at "^\\(#+\\)[ \t]\\(.*\\)")
+             (let ((level (length (match-string 1))))
+               (setq res (append res
+                                 (list
+                                  (cons
+                                   (intern (format "ol%s" level))
+                                   ;; The string that is the heading
+                                   ;; - any internal rules we should
+                                   ;; deal with here
+                                   (match-string 2)))))
+               (forward-line)))
+            (;; Horizontal rule
+             (looking-at "^[ \t]*----[ \t]*$")
+             (setq res (append res
+                               (list
+                                (cons 'hr ""))))
+             (forward-line))
+            (;; Pre-formatted block
+             (looking-at "^\n{{{$")
+             (if (not
+                  (re-search-forward "^\n{{{\n\\(\\(.\\|\n\\)*?\\)\n}}}$" nil t))
+                 (error "Creole: bad preformatted block"))
+             (setq res (append res
+                               (list
+                                (cons 'preformatted (match-string 1)))))
+             (forward-line))
+            (;; Lisp-plugin
+             (looking-at "^\n<<($")
+             (if (not
+                  (re-search-forward "^\n<<(\n\\(\\(.\\|\n\\)*?\\)\n)>>$" nil t))
+                 (error "Creole: bad Lisp plugin block"))
+             (let* ((plugin-lisp (match-string 1))
+                    (value (eval (car (read-from-string plugin-lisp))))
+                    (plugin-fragment (with-temp-buffer
+                                       (insert value)
+                                       (creole-tokenize (current-buffer)))))
+               (setq res (append res plugin-fragment)))
+             (forward-line))
+            (;; HTML-plugin
+             (looking-at "^\n<<html$")
+             (if (not
+                  (re-search-forward
+                   "^\n<<html\n\\(\\(.\\|\n\\)*?\\)\nhtml>>$" nil t))
+                 (error "Creole: bad HTML plugin block"))
+             (setq res (append res
+                               (list
+                                (cons 'plugin-html (match-string 1)))))
+             (forward-line))
+            (;; Paragraph line
+             (and (looking-at "^[^=*]")
+                  (not (looking-at "^$")))
+             (let* ((start (point))
+                    (end
+                     (save-match-data
+                       (let* ((matched-end
+                               ;; Find the end - the end is actually BEFORE this
+                               (re-search-forward "\\(^$\\)\\|\\(^[=*]\\)" nil 't))
+                              (matched (if matched-end (match-string 0))))
+                         (cond
+                           ((equal matched "") (- matched-end 1))
+                           ((equal matched "*") (- matched-end 2))
+                           ((equal matched "=") (- matched-end 2))
+                           (t
+                            (point-max)))))))
+               (setq res
+                     (append
+                      res
+                      (list
+                       (cons 'para (buffer-substring start end)))))
+               (goto-char end)))
+            ('t
+             (forward-line))))
+        res))))
 
 (defun creole--test-doc (buffer)
   "Insert a test document of creole text into BUFFER."
