@@ -944,7 +944,11 @@ possible to use the `cadr' of the style to add colors."
                        (lambda (&optional file-name)
                          "")))
                   (let (result
-                        (htmlbuf (htmlfontify-buffer)))
+                        (htmlbuf
+                         (flet
+                             ;; htmlfontify has annoying messages in it.
+                             ((message (format-str &rest args) t))
+                           (htmlfontify-buffer))))
                     (with-current-buffer htmlbuf
                       ;; FIXME we should add another property
                       ;; detailing which mode we're dealing with-
