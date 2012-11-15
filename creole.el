@@ -233,6 +233,15 @@ broken over lines</a>"
                  (creole-block-parse "[[thing|thing
 broken over lines]]"))))
 
+(defvar creole-recalculate-org-tables t
+  "Indicates that Org tables should be recalculated inplace.
+
+Table calculation is performed calling
+`org-table-recalculate'. The default value is to recalculate the
+tables. However, this leaves the original buffer modified. If you
+don't want the original buffer modified, or you don't have
+formulas in your tables (so recalculation is not necessary), you
+can change this value to nil.")
 
 (defun creole-tokenize (docbuf)
   "Parse DOCBUF which is full of creole wiki text.
@@ -270,8 +279,10 @@ Returns a list of parsed elements."
                  (forward-line))))
             (;; Table
              (looking-at "^|")
-             ;; Requires that we're back in the table
-             (org-table-recalculate t)
+             ;; Recalculate tables?
+             (when creole-recalculate-org-tables
+               ;; Requires that we're back in the table
+               (org-table-recalculate t))
              (let* ((tbl (org-table-to-lisp))
                     (pt (org-table-end)))
                (setq res (append
