@@ -89,6 +89,7 @@ broken over lines]]"))))
 (defvar creole-image-class nil
   "A default class to be applied to wiki linked images.")
 
+
 (defun creole-image-parse (text)
   "Parse TEXT for creole images.
 
@@ -111,10 +112,10 @@ a Width, or a WidthxHeight specification.
        (apply
         'format
         (append
-         '("<img %s src='%s' alt='%s' %s %s />")
+         '("<img %ssrc='%s' alt='%s' %s%s/>")
          (list
           ;; Whether we have a class to apply or not
-          (if creole-image-class (format "class='%s'" creole-image-class) "")
+          (if creole-image-class (format "class='%s' " creole-image-class) "")
           ;; URL of the image
           (match-string 1 m)
           ;; if we don't have an alternate, use the URL
@@ -131,23 +132,22 @@ a Width, or a WidthxHeight specification.
                   (string-match "\\([0-9]+\\)\\(x\\([0-9]+\\)\\)?" options)
                   (when (match-string 1 options)
                     (concat
-                     "width='" (match-string 1 options) "'"
+                     "width='" (match-string 1 options) "' "
                      (when (match-string 2 options)
-                       (concat " height='" (match-string 3 options) "'"))))))
+                       (concat "height='" (match-string 3 options) "' "))))))
               ""))))))
    text))
 
-
 (ert-deftest creole-image-parse ()
-  (should (equal "<img src='image.jpg' alt='whatever I tell you' width='20' height='1000' />"
+  (should (equal "<img src='image.jpg' alt='whatever I tell you' title='whatever I tell you' width='20' height='1000' />"
                  (creole-image-parse "{{image.jpg?size=20x1000|whatever I tell you}}")))
-  (should (equal "<img src='image.jpg' alt='image.jpg'  />"
+  (should (equal "<img src='image.jpg' alt='image.jpg' />"
                  (creole-image-parse "{{image.jpg}}")))
-  (should (equal "<img src='image.jpg' alt='alternate text'  />"
+  (should (equal "<img src='image.jpg' alt='alternate text' title='alternate text' />"
                  (creole-image-parse "{{image.jpg|alternate text}}")))
   (should (equal "<img src='image.jpg' alt='image.jpg' width='20' />"
                  (creole-image-parse "{{image.jpg?size=20}}")))
-  (should (equal "<img src='image.jpg' alt='alternate text' width='20' />"
+  (should (equal "<img src='image.jpg' alt='alternate text' title='alternate text' width='20' />"
                  (creole-image-parse "{{image.jpg?size=20|alternate text}}")))
   (should (equal "<img src='image.jpg' alt='image.jpg' width='20' height='10' />"
                  (creole-image-parse "{{image.jpg?size=20x10}}"))))
