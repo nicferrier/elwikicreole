@@ -1930,7 +1930,7 @@ All, any or none of these keys may be specified.
             ;; Now the JS
             (loop for js in javascript
                do (creole--insert-template
-                   javascript
+                   js
                    head-marker
                    docroot
                    "<script src='%s' language='Javascript'></script>\n"
@@ -2134,7 +2134,7 @@ This is a Creole document with some stuff in it.
 </html>
 "
     :docroot "~/elwikicreole/"
-    :css "~/elwikicreole/styles.css")))
+    :css '("~/elwikicreole/styles.css"))))
 
 (ert-deftest creole-wiki-css-embed ()
   "Test that strings are embedded for CSS when necessary."
@@ -2165,9 +2165,9 @@ font-size: 8pt;
     ;; Here's the docroot
     :docroot "~/elwikicreole/"
     ;; Here's a string specifying some CSS, clearly not a file
-    :css "p {
+    :css '("p {
 font-size: 8pt;
-}"))
+}")))
 
   ;; This version tests the full mocking causing embedding
   (with-temp-buffer
@@ -2204,7 +2204,7 @@ P { background: blue; }
     :docroot "~/elwikicreole/"
     ;; ... here's a file clearly not under the docroot, so it should
     ;; be embedded.
-    :css "~/someplace/styles.css")))))
+    :css '("~/someplace/styles.css"))))))
 
 (ert-deftest creole-wiki-js ()
   (flet ((creole--file-under-root-p
@@ -2227,7 +2227,7 @@ This is a Creole document with some stuff in it.
 </html>
 "
     :docroot "~/elwikicreole/"
-    :javascript "~/elwikicreole/scripts.js"))
+    :javascript '("~/elwikicreole/scripts.js")))
   (creole--wiki-test
     "= A Creole Document =
 
