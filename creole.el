@@ -2252,10 +2252,10 @@ doSomething();
 </html>
 "
     :docroot "~/elwikicreole/"
-    :javascript "$(document).ready(function () {
+    :javascript '("$(document).ready(function () {
 doSomething();
 });
-"))
+")))
 
 
 ;; Useful functions
