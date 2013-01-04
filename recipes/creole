@@ -1,0 +1,5 @@
+(creole
+ :files ("creole.el")
+ :test
+ (:files
+  ("creole-tests.el")))
