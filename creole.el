@@ -45,6 +45,31 @@
   "A WikiCreole parser and associated tools."
   :group 'hypertext)
 
+(defvar creole-oddmuse-on nil
+  "Whether creole should include OddMuse compatability.
+
+OddMuse is the Wiki language used by the EmacsWiki.  It is very
+nearly WikiCreole but not quite.  Hence this flag which turns on
+various small tweaks in behaviour.")
+
+(defun creole/link-replacer (m )
+  "Replace regexp replacer for `creole-link'."
+  (apply
+   'format
+   (append
+    '("<a href='%s'>%s</a>")
+    (cond
+      ;; We have both a url and a link
+      ((match-string 3 m)
+       (list
+        (match-string 1 m)
+        (match-string 4 m)))
+      ;; We only have a url
+      ((match-string 1 m)
+       (list
+        (match-string 1 m)
+        (match-string 1 m)))))))
+
 (defun creole-link-parse (text)
   "Parse TEXT for creole links.
 
@@ -52,25 +77,18 @@ In the future we need to have some sort of resolution system here?
 
 Possibly it would be good to orthongonaly update some list of
 links."
-  (replace-regexp-in-string
-   "\\[\\[\\(\\([A-Za-z]+:\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
-   (lambda (m)
-     (apply
-      'format
-      (append
-       '("<a href='%s'>%s</a>")
-       (cond
-        ;; We have both a url and a link
-        ((match-string 3 m)
-         (list
-          (match-string 1 m)
-          (match-string 4 m)))
-        ;; We only have a url
-        ((match-string 1 m)
-         (list
-          (match-string 1 m)
-          (match-string 1 m)))))))
-   text))
+  (let ((real-creole
+         (replace-regexp-in-string
+          "\\[\\[\\(\\([A-Za-z]+:\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
+          'creole/link-replacer
+          text)))
+    (if creole-oddmuse-on
+        (replace-regexp-in-string
+         "\\[\\(\\([A-Za-z]+:\\)*[^]| ]+\\)\\([| ]\\(\\([^]]+\\)\\)\\)*\\]"
+         'creole/link-replacer
+         real-creole)
+        ;; Else
+        real-creole)))
 
 (defvar creole-image-class nil
   "A default class to be applied to wiki linked images.")

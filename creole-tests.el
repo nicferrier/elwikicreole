@@ -16,6 +16,23 @@ broken over lines</a>"
                  (creole-link-parse "[[thing|thing
 broken over lines]]"))))
 
+(ert-deftest creole-link-parse-oddmuse ()
+  (let ((creole-oddmuse-on t))
+    (should (equal "<a href='http://thing'>thing</a>"
+                   (creole-link-parse "[[http://thing|thing]]")))
+    (should (equal "<a href='http://thing'>thing</a>"
+                   (creole-link-parse "[http://thing|thing]")))
+    (should (equal "<a href='http://thing'>thing</a>"
+                   (creole-link-parse "[http://thing blah]")))
+    (should (equal "<a href='thing'>fing!</a>"
+                   (creole-link-parse "[[thing|fing!]]")))
+    (should (equal "<a href='thing'>thing</a>"
+                   (creole-link-parse "[[thing]]")))
+    (should (equal "<a href='thing'>thing
+broken over lines</a>"
+                   (creole-link-parse "[[thing|thing
+broken over lines]]")))))
+
 (ert-deftest creole-image-parse ()
   (should (equal "<img src='image.jpg' alt='whatever I tell you' title='whatever I tell you' width='20' height='1000' />"
                  (creole-image-parse "{{image.jpg?size=20x1000|whatever I tell you}}")))
