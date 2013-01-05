@@ -33,8 +33,7 @@ and we don't handle some big things and all of what I'd call the exceptions:
 == Tests ==
 
 We do have a somewhat comprehensive {{{ERT}}} suite for the code we do
-have. The tests are embedded in the code.
-
+have.
 
 == Extensions ==
 
