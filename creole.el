@@ -77,6 +77,16 @@ In the future we need to have some sort of resolution system here?
 
 Possibly it would be good to orthongonaly update some list of
 links."
+  ;; FIXME!!! also need this code in here somewhere
+  ;;
+  ;; It does CapsLinks:
+  ;;
+  ;; (let ((str "NicFerrier is a hacker"))
+  ;;   (when
+  ;;       (string-match
+  ;;        "\\(^\\|[^!]\\)\\([A-Z][a-z0-9]+[A-Z][a-z0-9]+\\)"
+  ;;        str)
+  ;;     (match-string 2 str)))
   (let ((real-creole
          (replace-regexp-in-string
           "\\[\\[\\(\\([A-Za-z]+:\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
