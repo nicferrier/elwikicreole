@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.20
+;; Version: 0.8.5
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -244,7 +244,9 @@ Returns a list of parsed elements."
             (;; Pre-formatted block
              (looking-at "^\n{{{$")
              (if (not
-                  (re-search-forward "^\n{{{\n\\(\\(.\\|\n\\)*?\\)\n}}}$" nil t))
+                  (re-search-forward
+                   "^\n{{{\n\\(\\(.\\|\n\\)*?\\)\n}}}[ ]*$"
+                   nil t))
                  (error "Creole: bad preformatted block"))
              (setq res (append res
                                (list
@@ -253,7 +255,9 @@ Returns a list of parsed elements."
             (;; Lisp-plugin
              (looking-at "^\n<<($")
              (if (not
-                  (re-search-forward "^\n<<(\n\\(\\(.\\|\n\\)*?\\)\n)>>$" nil t))
+                  (re-search-forward
+                   "^\n<<(\n\\(\\(.\\|\n\\)*?\\)\n)>>[ ]*$"
+                   nil t))
                  (error "Creole: bad Lisp plugin block"))
              (let* ((plugin-lisp (match-string 1))
                     (value (eval (car (read-from-string plugin-lisp))))
@@ -280,7 +284,9 @@ Returns a list of parsed elements."
                      (save-match-data
                        (let* ((matched-end
                                ;; Find the end - the end is actually BEFORE this
-                               (re-search-forward "\\(^$\\)\\|\\(^[=*]\\)" nil 't))
+                               (re-search-forward
+                                "\\(^$\\)\\|\\(^[=*]\\)"
+                                nil 't))
                               (matched (if matched-end (match-string 0))))
                          (cond
                            ((equal matched "") (- matched-end 1))
