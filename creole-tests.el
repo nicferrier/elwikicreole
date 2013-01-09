@@ -3,7 +3,6 @@
 (require 'creole)
 (require 'ert)
 
-
 (ert-deftest creole-link-parse ()
   (should (equal "<a href='http://thing'>thing</a>"
                  (creole-link-parse "[[http://thing|thing]]")))
@@ -22,7 +21,7 @@ broken over lines]]"))))
                    (creole-link-parse "[[http://thing|thing]]")))
     (should (equal "<a href='http://thing'>thing</a>"
                    (creole-link-parse "[http://thing|thing]")))
-    (should (equal "<a href='http://thing'>thing</a>"
+    (should (equal "<a href='http://thing'>blah</a>"
                    (creole-link-parse "[http://thing blah]")))
     (should (equal "<a href='thing'>fing!</a>"
                    (creole-link-parse "[[thing|fing!]]")))
