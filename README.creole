@@ -1,3 +1,5 @@
+= WikiCreole Parser =
+
 This is a [[http://www.wikicreole.org/|WikiCreole]] parser in
 [[http://www.emacswiki.org/emacs/EmacsLisp|EmacsLisp]].
 
