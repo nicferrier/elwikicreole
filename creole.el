@@ -332,7 +332,7 @@ Returns a list of parsed elements."
              (forward-line))))
         res))))
 
-(defun creole--test-doc (buffer)
+(defun creole/test-doc (buffer)
   "Insert a test document of creole text into BUFFER."
   (with-current-buffer buffer
     (insert "= Heading! =\n")
@@ -351,15 +351,15 @@ that runs over several lines
     (insert "This is a paragraph {{{with code}}} and [[links]]
 and **bold** and //italics//.")))
 
-(defun creole--list-item (list-symbol)
+(defun creole/list-item (list-symbol)
   "Return the type and the level of the LIST-SYMBOL.
 
 For example:
 
- (creole--list-item 'ol1)
+ (creole/list-item 'ol1)
   => (ordered . 1)
 
- (creole--list-item 'ul10)
+ (creole/list-item 'ul10)
   => (unordered . 10)"
   (save-match-data
     (let ((s (symbol-name list-symbol)))
@@ -385,7 +385,7 @@ might be called the parsing API of this creole library."
          (result '()))
     (while docptr
       (let* ((token (car docptr))
-             (lst-item (creole--list-item (car token))))
+             (lst-item (creole/list-item (car token))))
         (case (if lst-item 'listitem (car token))
           (listitem
            (let* ((last (if (car state) (cdar state)))
@@ -430,7 +430,7 @@ might be called the parsing API of this creole library."
 
 ;; Exporting functions
 
-(defun creole--html-list (type lst)
+(defun creole/html-list (type lst)
   "Export the specified LST in HTML.
 
 The exported HTML is written into the current buffer.
@@ -443,7 +443,7 @@ This is NOT intended to be used by anything but
           do
           (cond
            ((listp item)
-            (creole--html-list (car item) (cdr item))
+            (creole/html-list (car item) (cdr item))
             (setq first nil))
            (t
             (when (not first)
@@ -454,7 +454,7 @@ This is NOT intended to be used by anything but
     (insert "</li>\n")
     (insert "</" (symbol-name type) ">\n")))
 
-(defun creole--html-table (table-list)
+(defun creole/html-table (table-list)
   "Convert the org-table structure TABLE-LIST to HTML.
 
 We use `orgtbl-to-generic' to do this."
@@ -679,7 +679,7 @@ Returns the HTML-BUFFER."
                   ;; and require special handling
                   ((ul ol)
                    ;; FIXME lists don't do block level replacement yet!
-                   (creole--html-list syntax (cdr element)))
+                   (creole/html-list syntax (cdr element)))
                   ;; Headings - FIXME - we need to change these
                   ;; obviously to something that can cope with any
                   ;; level of heading
@@ -695,7 +695,7 @@ Returns the HTML-BUFFER."
                    (insert (format "<h5>%s</h5>\n" (cdr element))))
                   ;; Tables
                   (table
-                   (insert (creole--html-table (cdr element))))
+                   (insert (creole/html-table (cdr element))))
                   ;; We support htmfontify for PRE blocks
                   (preformatted
                    (let ((styled (and do-font-lock
@@ -721,7 +721,7 @@ Returns the HTML-BUFFER."
       result-buffer)))
 
 
-(defun creole--file-under-root-p (file-name root)
+(defun creole/file-under-root-p (file-name root)
   "Is FILE-NAME under the directory ROOT?
 
 Return nil if there is no match or the part of the file-name
@@ -751,7 +751,7 @@ which was not under the docroot."
               (- (abs docroot-match-index) 1)
               (length true-name)))))))
 
-(defun creole--get-file (filename)
+(defun creole/get-file (filename)
   "An exception based FILENAME lookup.
 
 Either loads the FILENAME in a buffer (but does not select it) or
@@ -765,7 +765,7 @@ The FILENAME is expanded and `file-truename'd first."
         (signal 'file-error (format "No such file %s" file-path))
       (find-file-noselect file-path))))
 
-(defun creole--expand-item-value (item &optional docroot)
+(defun creole/expand-item-value (item &optional docroot)
   "Expand ITEM to be a value.
 
 If ITEM begins with a file-name identifying character then try
@@ -782,7 +782,7 @@ and the `cdr' being the expanded string."
     (if (string-match "^\\(\\./\\|/\\|~\\).*" item)
         ;; file-name templating has been requested
         ;; Check if we have a docroot that works
-        (let* ((path-info (creole--file-under-root-p item docroot)))
+        (let* ((path-info (creole/file-under-root-p item docroot)))
           (if path-info
               ;; The file is linkable so return the template with the
               ;; docroot-ed true-name
@@ -790,7 +790,7 @@ and the `cdr' being the expanded string."
             ;; No workable docroot so return either the text of the
             ;; file (if it exists) or just the filename
             (condition-case err
-                (with-current-buffer (creole--get-file item)
+                (with-current-buffer (creole/get-file item)
                   (cons :string
                         (buffer-substring
                          (point-min)
@@ -801,7 +801,7 @@ and the `cdr' being the expanded string."
       ;; The item was not a file-name so just return it
       (cons :string item))))
 
-(defun creole--wrap-buffer-text (start end &optional buffer)
+(defun creole/wrap-buffer-text (start end &optional buffer)
   "Simply wrap the text of BUFFER (or the current buffer).
 
 START is placed at the start of the BUFFER and END is placed at
@@ -814,7 +814,7 @@ the end of the BUFFER."
         (goto-char (point-max))
         (insert end)))))
 
-(defun creole--insert-template (key
+(defun creole/insert-template (key
                                 position
                                 docroot
                                 link-template
@@ -823,7 +823,7 @@ the end of the BUFFER."
   "Insert either the LINK-TEMPLATE or the EMBED-TEMPLATE.
 
 KEY specifies a value that is expanded with
-`creole--expand-item-value', possibly with DOCROOT.
+`creole/expand-item-value', possibly with DOCROOT.
 
 Whether we're a :link or a :string will cause either the
 LINK-TEMPLATE or the EMBED-TEMPLATE to be inserted at the marker
@@ -834,7 +834,7 @@ the filename is concatenated with that."
   (save-excursion
     (when key
       (goto-char position)
-      (let ((value (creole--expand-item-value key docroot)))
+      (let ((value (creole/expand-item-value key docroot)))
         (case (car value)
           (:link
            (insert
@@ -988,7 +988,7 @@ the filename is concatenated with that."
   :type '(string))
 
 
-(defun creole--css-list-to-style-decl (css-list)
+(defun creole/css-list-to-style-decl (css-list)
   "Make the CSS-LIST into an HTML STYLE decl."
   (mapconcat
    (lambda (style)
@@ -1092,7 +1092,7 @@ recognize as a file.  A file-name is detected by a leading
 '~' (meaning expand from the user root) or '/' (meaning rooted)
 or './' (meaning expand from the root of the source creole file).
 
-If SOURCE is a filename it is loaded with `creole--get-file'.
+If SOURCE is a filename it is loaded with `creole/get-file'.
 
 
 Keyword arguments are supported to change the way the HTML is
@@ -1184,7 +1184,7 @@ All, any or none of these keys may be specified.
            ((bufferp source)
             source)
            ((string-match "^\\(./\\|/\\|~\\).*" source)
-            (creole--get-file source))
+            (creole/get-file source))
            (t
             (with-current-buffer (generate-new-buffer "* creole-source *")
               (insert source)
@@ -1212,7 +1212,7 @@ All, any or none of these keys may be specified.
 
         ;; Insert the BODY header and footer
         (when body-header
-          (let ((hdr (creole--expand-item-value body-header)))
+          (let ((hdr (creole/expand-item-value body-header)))
             (when (eq (car hdr) :string)
               (goto-char (point-min))
               (insert
@@ -1221,7 +1221,7 @@ All, any or none of these keys may be specified.
                 vars)))))
 
         (when body-footer
-          (let ((ftr (creole--expand-item-value body-footer)))
+          (let ((ftr (creole/expand-item-value body-footer)))
             (when (eq (car ftr) :string)
                (goto-char (point-max))
                (insert
@@ -1230,7 +1230,7 @@ All, any or none of these keys may be specified.
                  vars)))))
 
         ;; Now wrap everything we have so far with the BODY tag
-        (creole--wrap-buffer-text "<body>\n" "</body>\n")
+        (creole/wrap-buffer-text "<body>\n" "</body>\n")
 
         ;; Now stuff that should go in a header
         (when (or css javascript meta other-link
@@ -1251,7 +1251,7 @@ All, any or none of these keys may be specified.
             (insert "</head>\n")
             ;; First the CSS
             (loop for ss in css
-               do (creole--insert-template
+               do (creole/insert-template
                    ss
                    head-marker
                    docroot
@@ -1260,7 +1260,7 @@ All, any or none of these keys may be specified.
                    docroot-alias))
             ;; Now the JS
             (loop for js in javascript
-               do (creole--insert-template
+               do (creole/insert-template
                    js
                    head-marker
                    docroot
@@ -1273,13 +1273,13 @@ All, any or none of these keys may be specified.
 "
                    docroot-alias))
             ;; Now meta
-            (creole--insert-template
+            (creole/insert-template
              meta
              head-marker
              docroot
              "<meta %s/>\n"
              "<meta %s/>\n")
-            (creole--insert-template
+            (creole/insert-template
              other-link
              head-marker
              docroot
@@ -1298,11 +1298,11 @@ All, any or none of these keys may be specified.
                       (goto-char head-marker)
                       (insert
                        "<style>\n"
-                       (creole--css-list-to-style-decl css)
+                       (creole/css-list-to-style-decl css)
                        "\n</style>\n"))))))
 
         ;; Wrap the whole thing in the HTML tag
-        (creole--wrap-buffer-text "<html>\n" "</html>\n")))
+        (creole/wrap-buffer-text "<html>\n" "</html>\n")))
 
     ;; Should we output the whole thing to the default output stream?
     (when (eq destination t)

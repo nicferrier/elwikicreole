@@ -186,7 +186,7 @@ This is a paragraph {{{with code}}} and [[links]]"))
 
 (ert-deftest creole-tokenize ()
   (with-temp-buffer
-    (creole--test-doc (current-buffer))
+    (creole/test-doc (current-buffer))
     (should
      (equal
       (creole-tokenize (current-buffer))
@@ -207,13 +207,13 @@ This is a paragraph {{{with code}}} and [[links]]"))
         (para . "This is a paragraph {{{with code}}} and [[links]]
 and **bold** and //italics//."))))))
 
-(ert-deftest creole--list-item ()
+(ert-deftest creole/list-item ()
   "Test the little creole list item function."
-  (should (equal '(ul . 1) (creole--list-item 'ul1)))
-  (should (equal '(ul . 10) (creole--list-item 'ul10)))
-  (should (equal '(ul . 7) (creole--list-item 'ul7)))
-  (should (equal '(ol . 7) (creole--list-item 'ol7)))
-  (should (equal nil (creole--list-item 'h1))))
+  (should (equal '(ul . 1) (creole/list-item 'ul1)))
+  (should (equal '(ul . 10) (creole/list-item 'ul10)))
+  (should (equal '(ul . 7) (creole/list-item 'ul7)))
+  (should (equal '(ol . 7) (creole/list-item 'ol7)))
+  (should (equal nil (creole/list-item 'h1))))
 
 (ert-deftest creole-structure ()
   "Testing tokenize lists to parsed representations.
@@ -347,10 +347,10 @@ that runs over several lines")
         (ul "and a list item stops it")
         (para . "This is a paragraph {{{with code}}} and [[links]]"))))))
 
-(ert-deftest creole--html-list ()
+(ert-deftest creole/html-list ()
   "Test the list export, which is a little complex."
   (with-temp-buffer
-    (creole--html-list
+    (creole/html-list
      'ul
      '("this is a list //with an italicized part//"
        (ul "with a deeper list")
@@ -368,7 +368,7 @@ that runs over several lines")
 </ul>
 "))))
 
-(ert-deftest creole--html-table ()
+(ert-deftest creole/html-table ()
   "Test org tables.
 
 org-tables are not quite WikiCreole tables.  Creole table headers
@@ -391,7 +391,7 @@ difficult."
                ("35" "**end**"))))
     (should
      (equal
-      (creole--html-table tbl)
+      (creole/html-table tbl)
       "<table>
 <thead><tr>
 <th>col1</th>
@@ -549,7 +549,7 @@ html>>
 (ert-deftest creole-html ()
   "Test the HTML export end to end."
   (with-temp-buffer
-    (creole--test-doc (current-buffer))
+    (creole/test-doc (current-buffer))
     (let ((html (creole-html (current-buffer))))
       (with-current-buffer html
         (goto-char (point-min))
@@ -592,58 +592,58 @@ and <strong>bold</strong> and <em>italics</em>.</p>
 "))))))
 
 
-(ert-deftest creole--expand-item-value-mocked-file ()
+(ert-deftest creole/expand-item-value-mocked-file ()
   "Test that we can mock the file loading."
   (with-temp-buffer
     (insert "= A very small creole file =\n")
     (let ((file-buffer (current-buffer)))
       ;; Mock both these functions to cause the buffer 'file-buffer'
-      ;; to be returned from creole--get-file
-      (flet ((creole--file-under-root-p
+      ;; to be returned from creole/get-file
+      (flet ((creole/file-under-root-p
               (file-name root)
               nil)
-             (creole--get-file
+             (creole/get-file
               (filename)
               file-buffer))
         (should (equal
                  (cons :string "= A very small creole file =\n")
-                 (creole--expand-item-value
+                 (creole/expand-item-value
                   "~/elwikicreole/README.creole"
                   "~/elwikicreole/")))))))
 
-(ert-deftest creole--expand-item-value-plain-string ()
+(ert-deftest creole/expand-item-value-plain-string ()
   ;; Should just be the value of the string
   (should (equal
            (cons :string "just a string")
-           (creole--expand-item-value
+           (creole/expand-item-value
             "just a string"
             "~/elwikicreole/"))))
 
-(ert-deftest creole--expand-item-value-safe-file ()
+(ert-deftest creole/expand-item-value-safe-file ()
   "Test that a file under the docroot is returned as just a file."
-  (flet ((creole--file-under-root-p
+  (flet ((creole/file-under-root-p
           (file-name root)
           ;; TODO - implementation
           "/README.creole"))
         (should (equal
                  (cons :link "/README.creole")
-                 (creole--expand-item-value
+                 (creole/expand-item-value
                   "~/elwikicreole/README.creole"
                   "~/elwikicreole/")))))
 
-(ert-deftest creole--expand-item-value-null-file ()
+(ert-deftest creole/expand-item-value-null-file ()
   ;; Should be an empty :link
-  (flet ((creole--file-under-root-p
+  (flet ((creole/file-under-root-p
           (file-name root)
           ;; TODO - implementation
           nil))
         (should (equal
                  (cons :link "/__not__there__.creole")
-                 (creole--expand-item-value
+                 (creole/expand-item-value
                   "/__not__there__.creole"
                   "~/elwikicreole/")))))
 
-(ert-deftest creole--expand-item-value-unsafe-file ()
+(ert-deftest creole/expand-item-value-unsafe-file ()
   ;; Supply a filename but get back the expanded string
   ;; because the filename is not under the docroot
   (let ((TEST-FILE-NAME "/home/nferrier/wiki/small.creole")
@@ -654,7 +654,7 @@ and <strong>bold</strong> and <em>italics</em>.</p>
     (with-current-buffer TMPBUF
       (insert "= A very small Creole document =\n"))
     (flet
-        ((creole--file-under-root-p
+        ((creole/file-under-root-p
           (file-name root)
           nil)
          (file-truename
@@ -669,7 +669,7 @@ and <strong>bold</strong> and <em>italics</em>.</p>
       (should
        (equal
         (cons :string "= A very small Creole document =\n")
-        (creole--expand-item-value
+        (creole/expand-item-value
          "~/elwikiengine/wiki/small.creole"
          "~/elwikicreole/"))))
     (kill-buffer TMPBUF)))
@@ -690,7 +690,7 @@ int main(char **argv, int argc)
 }
 "))
          (style-decl
-          (creole--css-list-to-style-decl
+          (creole/css-list-to-style-decl
            (get-text-property 0 :css-list fontified))))
     (should (string-match "^span.keyword" style-decl))
     (should (string-match "^span.default" style-decl))
@@ -730,7 +730,7 @@ int main(char **argv, int argc)
 This is a nice simple Creole Wiki file.
 ")
     (let ((creole-file-buffer (current-buffer)))
-      (flet ((creole--get-file
+      (flet ((creole/get-file
               (filename)
               creole-file-buffer))
         (with-temp-buffer
@@ -749,7 +749,7 @@ This is a nice simple Creole Wiki file.
 </html>
 ")))))))
 
-(defmacro creole--wiki-test (creoletext htmltext &rest extras)
+(defmacro creole/wiki-test (creoletext htmltext &rest extras)
   "A helper macro for testing full HTML conversion.
 
 CREOLETEXT is the creoletext to test.
@@ -787,7 +787,7 @@ too dependent on the particular environment (fonts etc...)."
 
 (ert-deftest creole-wiki-fontify ()
   ;; Font lock testing
-  (creole--wiki-test
+  (creole/wiki-test
     "= A Creole Document =
 
 {{{
@@ -817,7 +817,7 @@ A preformatted area with styling.
 
 (ert-deftest creole-wiki-base ()
   "Test the comprehensive HTML production."
-  (creole--wiki-test
+  (creole/wiki-test
     "= A Creole Document =
 
 This is a Creole document with some stuff in it.
@@ -832,7 +832,7 @@ This is a Creole document with some stuff in it.
 
 (ert-deftest creole-wiki-headers-footers ()
   "Test that specified headers and footers come out correctly."
-  (creole--wiki-test
+  (creole/wiki-test
     "= A Creole Document =
 
 This is a Creole document with some stuff in it.
@@ -851,10 +851,10 @@ This is a Creole document with some stuff in it.
 
 (ert-deftest creole-wiki-css-link ()
   "Test that a CSS under the docroot is linked not embedded."
-  (flet ((creole--file-under-root-p
+  (flet ((creole/file-under-root-p
           (file-name root)
           "/styles.css"))
-    (creole--wiki-test
+    (creole/wiki-test
       "= A Creole Document =
 
 This is a Creole document with some stuff in it.
@@ -875,11 +875,11 @@ This is a Creole document with some stuff in it.
 
 (ert-deftest creole-wiki-css-embed ()
   "Test that strings are embedded for CSS when necessary."
-  (flet ((creole--file-under-root-p
+  (flet ((creole/file-under-root-p
           (file-name root)
           "/styles.css"))
   ;; Test a string specified as the CSS is embedded
-  (creole--wiki-test
+  (creole/wiki-test
     "= A Creole Document =
 
 This is a Creole document with some stuff in it.
@@ -913,13 +913,13 @@ font-size: 8pt;
       ;; Mock the 2 functions so that the file is not considered under
       ;; the docroot and so that it's contents if the CSS fragment
       ;; above
-      (flet ((creole--file-under-root-p
+      (flet ((creole/file-under-root-p
               (file-name root)
               nil)
-             (creole--get-file
+             (creole/get-file
               (filename)
               css-file-buffer))
-        (creole--wiki-test
+        (creole/wiki-test
           "= A Creole Document =
 
 This is a Creole document with some stuff in it.
@@ -944,10 +944,10 @@ P { background: blue; }
     :css '("~/someplace/styles.css"))))))
 
 (ert-deftest creole-wiki-js ()
-  (flet ((creole--file-under-root-p
+  (flet ((creole/file-under-root-p
           (file-name root)
           "/scripts.js"))
-    (creole--wiki-test
+    (creole/wiki-test
       "= A Creole Document =
 
 This is a Creole document with some stuff in it.
@@ -965,7 +965,7 @@ This is a Creole document with some stuff in it.
 "
     :docroot "~/elwikicreole/"
     :javascript '("~/elwikicreole/scripts.js")))
-  (creole--wiki-test
+  (creole/wiki-test
     "= A Creole Document =
 
 This is a Creole document with some stuff in it.
