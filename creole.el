@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.5
+;; Version: 0.8.6
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -602,7 +602,7 @@ possible to use the `cadr' of the style to add colors."
         (concat "<pre>\n" text "\n</pre>")))))
 
 (defvar creole-structured '()
-  "Contains the parsed creole.")
+  "A buffer local containing the parsed creole for the buffer.")
 
 (defun* creole-html (docbuf
                      &optional html-buffer
