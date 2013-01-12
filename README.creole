@@ -142,8 +142,28 @@ use OddMuse links, which look like this:
 [http://target text about target]
 }}}
 
+=== CamelCaps Links ===
 
-== Reuse ==
+If you let bind {{{creole-link-resolver-fn }}} to a function that
+resolves links then {{{creole}}} will use that resolver to also
+convert CamelCaps to links:
+
+{{{
+MyLink
+}}}
+
+will be passed to the resolver, the result of the resolver will be
+used to generate the link so that, if the resolver returns:
+{{{http://myserver/MyLink}}} the link will be:
+
+{{{
+<a href="http://myserver/MyLink">MyLink</a>
+}}}
+
+This is intended to support real Wiki engines, like the EmacsWiki
+engine.
+
+== API ==
 
 The code is designed to be reused in differing circumstances, it is split into:
 
@@ -154,8 +174,22 @@ The code is designed to be reused in differing circumstances, it is split into:
 * an HTML exporter {{{creole-html}}} which outputs HTML from a WikiCreole source buffer
 ** it always outputs to the same buffer right now, obviously changes coming here
 ** it also has an interactive output option
+** it can also take a structure transformation function, see below
 * a user tool {{{creole-wiki}}} which can take lots of customization options
 
+=== Structure Transformation ===
+
+The {{{creole-structure}}} function produces a list based syntax tree
+of a creole document. The resulting structure can be transformed into
+something else.
+
+The {{{creole-html}}} function supports a parameter
+{{{:structure-transform-fn}}} which can be a function, or a list of
+functions, which are passed the structure and can return a transformed
+version. The transformed version is then rendered to HTML.
+
+This is intended to be used for implementing things like tables of
+contents (these are required by EmacsWiki).
 
 == About EmacsWiki ==
 
