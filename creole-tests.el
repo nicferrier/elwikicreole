@@ -545,6 +545,37 @@ html>>
 </table>
 "))))))
 
+(ert-deftest creole/structure-pipeline ()
+  "Test the pipelining."
+  (should ;; test with empty pipeline
+   (equal
+    '((heading1 "hello")
+      (ul "a tokenizer"
+       (ul "Inline markup inside a paragraph is NOT converted.")
+       "a //parser//"))
+    (creole/structure-pipeline
+     (list)
+     '((heading1 "hello")
+       (ul "a tokenizer"
+        (ul "Inline markup inside a paragraph is NOT converted.")
+        "a //parser//")))))
+  (should ;; test with a single stage in the pipeline
+   (equal
+    '((heading1 "hello")
+      (ul "a tokenizer"
+       (ul "Inline markup inside a paragraph is NOT converted.")
+       "a //parser//")
+      (para "end of the document"))
+    (creole/structure-pipeline
+     (list (lambda (structure)
+             (append
+              structure
+              (list (list 'para "end of the document")))))
+     '((heading1 "hello")
+       (ul "a tokenizer"
+        (ul "Inline markup inside a paragraph is NOT converted.")
+        "a //parser//"))))))
+
 (ert-deftest creole-html ()
   "Test the HTML export end to end."
   (with-temp-buffer
