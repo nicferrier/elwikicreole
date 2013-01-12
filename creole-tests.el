@@ -2,6 +2,22 @@
 
 (require 'creole)
 (require 'ert)
+(require 'cl)
+
+(ert-deftest creole/link-resolve ()
+  "Test simple resolution."
+  (should
+   (equal
+    "test.creole"
+    (flet ((directory-files (dir &optional full match nosort)
+             (list "test.creole")))
+      (creole/link-resolve "test"))))
+  (should
+   (equal
+    "test"
+    (flet ((directory-files (dir &optional full match nosort)
+             (list)))
+      (creole/link-resolve "test")))))
 
 (ert-deftest creole-link-parse ()
   (should (equal "<a href='http://thing'>thing</a>"
