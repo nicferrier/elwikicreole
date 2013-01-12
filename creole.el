@@ -52,7 +52,38 @@ OddMuse is the Wiki language used by the EmacsWiki.  It is very
 nearly WikiCreole but not quite.  Hence this flag which turns on
 various small tweaks in behaviour.")
 
-(defun creole/link-replacer (m )
+(defvar creole-link-resolver-fn nil
+  "The function which will resolve links.
+
+Resolving a link is necessary for links without context such as:
+
+  [thing]
+
+or a link formed by CamelCaps.
+
+By default there is no link resolver and these links are not
+resolved.")
+
+(defun creole/link-resolve (name)
+  "A simple creole link resolver.
+
+Resolve the link by looking in the current directory for a
+.creole file that matches the name.
+
+A note for Wiki implementors: This is not a good implementation
+for a web app since it exposes the extensions and does not
+prepend a URL.  If you use a resolver to prepend the url then you
+may as well resolve the extension in the webapp."
+  (let ((candidates
+         (directory-files
+          default-directory
+          nil (concat name ".creole"))))
+    (if (and (listp candidates)
+             (car-safe candidates))
+        (car candidates)
+        name)))
+
+(defun creole/link-replacer (m)
   "Replace regexp replacer for `creole-link'."
   (apply
    'format
@@ -67,38 +98,43 @@ various small tweaks in behaviour.")
       ;; We only have a url
       ((match-string 1 m)
        (list
-        (match-string 1 m)
+        (if (functionp creole-link-resolver-fn)
+            (funcall creole-link-resolver-fn (match-string 1 m))
+            (match-string 1 m))
         (match-string 1 m)))))))
 
 (defun creole-link-parse (text)
   "Parse TEXT for creole links.
 
-In the future we need to have some sort of resolution system here?
+If `creole-oddmuse-on' is t then OddMuse links will be parsed as well.
 
-Possibly it would be good to orthongonaly update some list of
-links."
-  ;; FIXME!!! also need this code in here somewhere
-  ;;
-  ;; It does CapsLinks:
-  ;;
-  ;; (let ((str "NicFerrier is a hacker"))
-  ;;   (when
-  ;;       (string-match
-  ;;        "\\(^\\|[^!]\\)\\([A-Z][a-z0-9]+[A-Z][a-z0-9]+\\)"
-  ;;        str)
-  ;;     (match-string 2 str)))
-  (let ((real-creole
-         (replace-regexp-in-string
-          "\\[\\[\\(\\([A-Za-z]+:\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
-          'creole/link-replacer
-          text)))
-    (if creole-oddmuse-on
-        (replace-regexp-in-string
-         "\\[\\(\\([A-Za-z]+:\\)*[^]| ]+\\)\\([| ]\\(\\([^]]+\\)\\)\\)*\\]"
-         'creole/link-replacer
-         real-creole)
-        ;; Else
-        real-creole)))
+If `creole-link-resolver-fn' is non-nil and a function then all
+single element links are passed through it.  This variable also
+turns on CamelCase linking."
+  (let* ((real-creole
+          (replace-regexp-in-string
+           "\\[\\[\\(\\([A-Za-z]+:\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
+           'creole/link-replacer
+           (if (functionp creole-link-resolver-fn)
+               (let* ((case-fold-search nil)) ; do CamelCaps links
+                 (replace-regexp-in-string
+                  "\\(^\\|[^!]\\)\\([A-Z][a-z0-9]+[A-Z][a-z0-9]+\\)"
+                  (lambda (m)
+                    (let ((link (match-string 2 m)))
+                      (format
+                       "<a href='%s'>%s</a>"
+                       (funcall creole-link-resolver-fn link)
+                       link))) text t))
+               ;; Else just use the text
+               text) t))
+         (oddmuse
+          (when creole-oddmuse-on
+            (replace-regexp-in-string
+             "\\[\\(\\([A-Za-z]+:\\)*[^]| ]+\\)\\([| ]\\(\\([^]]+\\)\\)\\)*\\]"
+             'creole/link-replacer
+             real-creole)))
+         (bracket-resolved (if oddmuse oddmuse real-creole)))
+    bracket-resolved))
 
 (defvar creole-image-class nil
   "A default class to be applied to wiki linked images.")
