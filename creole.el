@@ -637,15 +637,46 @@ possible to use the `cadr' of the style to add colors."
                     result)))))
         (concat "<pre>\n" text "\n</pre>")))))
 
+(defun creole-content-list (structure)
+  "Add a table of contents list to the STRUCTURE.
+
+The list is only added if the STRUCTURE has at least 2 headings."
+  (let ((headings
+         (loop for el in structure
+            if (memq
+                (car el)
+                '(heading1 heading2 heading3 heading4))
+            collect el)))
+    (if (< (length headings) 2)
+        structure
+        ;; Else add the index before the 2nd index
+        (let ((toc
+               `(ul
+                 ,@(loop for (head . data) in headings collect data))))
+          ;; how to get this into the structure
+          ;;(loop )
+          structure
+          ))))
+
 (defvar creole-structured '()
   "A buffer local containing the parsed creole for the buffer.")
+
+(defun creole/structure-pipeline (pipeline structure)
+  "Calls each function in PIPELINE transforming STRUCTURE."
+  (assert (listp pipeline) "creole/structure-pipeline needs a list")
+  (loop
+     with result = structure
+     for stage in pipeline
+       do (setq result (funcall stage result))
+       finally return result))
 
 (defun* creole-html (docbuf
                      &optional html-buffer
                      &key result-mode
                      (erase-existing t)
                      do-font-lock
-                     switch-to)
+                     switch-to
+                     structure-transform-fn)
   "Export DOCBUF as HTML to HTML-BUFFER.
 
 If HTML-BUFFER does not exist then a buffer is created based on
@@ -680,6 +711,12 @@ the export is done.
 When called interactively RESULT-MODE is set to 'html-mode',
 ERASE-EXISTING is set to true and SWITCH-TO is set to true.
 
+STRUCTURE-TRANSFORM-FN may be a function or a list of functions
+to transform the parsed structure of the creole source.  A
+transformation function must result in a legal creole
+structure.  If a list is used the result of the first function in
+the list is passed to the next until the list is exhausted.
+
 The buffer local variable `creole-structured' is set on the
 HTML-BUFFER with the parsed creole in it.  See `creole-structure'
 for the details of that data structure.
@@ -703,8 +740,12 @@ Returns the HTML-BUFFER."
                   (get-buffer docbuf))))))))
     (make-local-variable 'creole-structured)
     (let ((creole
-           (creole-structure
-            (creole-tokenize docbuf))))  ; Get the parsed creole doc
+           (creole/structure-pipeline
+            (if (functionp structure-transform-fn)
+                (list structure-transform-fn)
+                structure-transform-fn)
+            (creole-structure
+             (creole-tokenize docbuf)))))  ; Get the parsed creole doc
       (with-current-buffer result-buffer
         (if erase-existing (erase-buffer)) ; Erase if we were asked to
         (loop for element in creole
