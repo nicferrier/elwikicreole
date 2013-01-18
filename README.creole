@@ -171,6 +171,7 @@ The code is designed to be reused in differing circumstances, it is split into:
 ** Inline markup inside a paragraph is NOT converted.
 * a //parser// {{{creole-structure}}} which takes a tokenizer list and returns a parsed representation
 ** note it's only creole lists that need this //parsing// step
+** {{{creole-html}}} adds the parsed structure to the creole source buffer as a local variable
 * an HTML exporter {{{creole-html}}} which outputs HTML from a WikiCreole source buffer
 ** it always outputs to the same buffer right now, obviously changes coming here
 ** it also has an interactive output option
@@ -201,3 +202,22 @@ via [[http://elnode.org|Elnode]] to implement the Wiki.
 I hope this will produce a more hackable wiki for the Emacs
 community. We're a very hacky community, we like to change things, so
 having our wiki implemented in Elisp seems like a good step forward.
+
+== Using Creole for other doc ==
+
+I like writing creole so much that I really don't want to get into
+writing texinfo again. Especially for writing manuals for all the
+Elisp I do. I wonder if creole could be converted to texinfo? In many
+ways texinfo is much richer, so we'd have to find ways of capturing
+certain semantics. For example, texinfo has the {{{@function}}} and
+{{{@example}}} tags whereas creole just has one syntax for which is
+used for code or pre-formatted sections depending on whether it's used
+inline or not.
+
+I wonder if we couldn't achieve the correct conversion by doing
+something smart though. Creole could lookup single word code/pre
+markup to see if it's a declared function or variable (via some
+program specific lookup function, easy for EmacsLisp, maybe harder for
+Java).
+
+To achieve this we could just have more hooks in the conversion.
