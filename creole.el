@@ -30,7 +30,7 @@
 ;; language.
 
 ;; This parser now includes extra support to help deal with OddMuse
-;; files.$
+;; files.
 
 ;; This code was originally written to mark the death of John McCarthy
 ;; - http://news.ycombinator.com/item?id=3151988
