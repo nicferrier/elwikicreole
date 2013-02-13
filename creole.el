@@ -90,46 +90,56 @@ may as well resolve the extension in the webapp."
   "Replace regexp replacer for `creole-link'."
   (apply
    'format
-   (append
-    '("<a href='%s'>%s</a>")
-    (cond
-      ;; We have both a url and a link
-      ((match-string 3 m)
-       (list
-        (match-string 1 m)
-        (match-string 4 m)))
-      ;; We only have a url
-      ((match-string 1 m)
-       (list
-        (if (functionp creole-link-resolver-fn)
-            (funcall creole-link-resolver-fn (match-string 1 m))
-            (match-string 1 m))
-        (match-string 1 m)))))))
+   "<a href='%s'>%s</a>"
+   (cond
+     ;; We have both a url and a link
+     ((match-string 4 m)
+      (let ((link (match-string 1 m))
+            (text (match-string 5 m)))
+        (list
+         (if (and (not (save-match-data
+                         (string-match "\\(http\\|ftp\|mailto\\)+:" link)))
+                  (functionp creole-link-resolver-fn))
+             (funcall creole-link-resolver-fn link) link) text)))
+     ;; We only have a url
+     ((match-string 1 m)
+      (let ((link (match-string 1 m)))
+        (list
+         (if (and (not (save-match-data
+                         (string-match "\\(http\\|ftp\|mailto\\)+:" link)))
+                  (functionp creole-link-resolver-fn))
+             (funcall creole-link-resolver-fn link) link)
+         link))))))
 
 (defun creole-link-parse (text)
   "Parse TEXT for creole links.
 
-If `creole-oddmuse-on' is t then OddMuse links will be parsed as well.
+If `creole-oddmuse-on' is t then OddMuse links will be parsed as
+well.  OddMuse links are single bracket links, like:
+
+ [ThisIsOddMuse]
 
 If `creole-link-resolver-fn' is non-nil and a function then all
 single element links are passed through it.  This variable also
 turns on CamelCase linking."
-  (let* ((real-creole
+  (let* ((resolvable-link
+          (if (functionp creole-link-resolver-fn)
+              (let* ((case-fold-search nil)) ; do CamelCaps links
+                (replace-regexp-in-string
+                 "\\(^\\|[^[!]\\)\\([A-Z][a-z0-9]+[A-Z][a-z0-9]+\\)"
+                 (lambda (m)
+                   (let ((link (match-string 2 m)))
+                     (format
+                      "<a href='%s'>%s</a>"
+                      (funcall creole-link-resolver-fn link)
+                      link))) text t))
+              ;; Else just use the text
+              text))
+         (real-creole
           (replace-regexp-in-string
-           "\\[\\[\\(\\([A-Za-z]+:\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
+           "\\[\\[\\(\\(\\(http\\|ftp\\|mailto\\):\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
            'creole/link-replacer
-           (if (functionp creole-link-resolver-fn)
-               (let* ((case-fold-search nil)) ; do CamelCaps links
-                 (replace-regexp-in-string
-                  "\\(^\\|[^!]\\)\\([A-Z][a-z0-9]+[A-Z][a-z0-9]+\\)"
-                  (lambda (m)
-                    (let ((link (match-string 2 m)))
-                      (format
-                       "<a href='%s'>%s</a>"
-                       (funcall creole-link-resolver-fn link)
-                       link))) text t))
-               ;; Else just use the text
-               text) t))
+           resolvable-link))
          (oddmuse
           (when creole-oddmuse-on
             (replace-regexp-in-string

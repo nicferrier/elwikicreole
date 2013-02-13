@@ -51,7 +51,18 @@ broken over lines]]"))))
              (list "ThisThing.creole")))
       (should
        (equal "<a href='ThisThing.creole'>ThisThing</a>"
-              (creole-link-parse "ThisThing"))))))
+              (creole-link-parse "ThisThing"))))
+    (flet ((directory-files (dir &optional full match nosort)
+             (list "ThisThing.creole")))
+      (should
+       (equal "<a href='http://blah/blah'>blah</a>"
+              (creole-link-parse "[[http://blah/blah|blah]]"))))
+    (flet ((directory-files (dir &optional full match nosort)
+             (list "ThisThing.creole")))
+      (should
+       (equal "<a href='ThisThing.creole'>blah</a>"
+              (creole-link-parse "[[ThisThing|blah]]"))))))
+
 
 (ert-deftest creole-link-parse-oddmuse ()
   (let ((creole-oddmuse-on t))
