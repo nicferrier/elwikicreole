@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.20
+;; Version: 0.8.21
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -97,16 +97,14 @@ may as well resolve the extension in the webapp."
       (let ((link (match-string 1 m))
             (text (match-string 5 m)))
         (list
-         (if (and (not (save-match-data
-                         (string-match "\\(http\\|ftp\|mailto\\)+:" link)))
+         (if (and (not (string-match-p "\\(http\\|ftp\\|mailto\\)+:" link))
                   (functionp creole-link-resolver-fn))
              (funcall creole-link-resolver-fn link) link) text)))
      ;; We only have a url
      ((match-string 1 m)
       (let ((link (match-string 1 m)))
         (list
-         (if (and (not (save-match-data
-                         (string-match "\\(http\\|ftp\|mailto\\)+:" link)))
+         (if (and (not (string-match-p "\\(http\\|ftp\\|mailto\\)+:" link))
                   (functionp creole-link-resolver-fn))
              (funcall creole-link-resolver-fn link) link)
          link))))))
