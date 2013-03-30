@@ -623,17 +623,10 @@ possible to use the `cadr' of the style to add colors."
       (buffer-substring
        (point-min)
        (point-max)))))
-  (let (mode-func)
+  (let ((mode-func (creole-htmlize/mode-func text)))
     (save-match-data
-      (if (when (string-match "^##! \\(.*\\)\n" text)
-            (setq mode-func
-                  (intern
-                   (concat
-                    (or
-                     (match-string 1 text)
-                     (downcase mode-name))
-                    "-mode")))
-            (functionp mode-func))
+      (if (not (functionp mode-func))
+          (concat "<pre>\n" text "\n</pre>")
           (with-temp-buffer
             ;; Get font-lock?
             (insert text "\n")
