@@ -127,9 +127,14 @@ turns on CamelCase linking."
           (if (functionp creole-link-resolver-fn)
               (let* ((case-fold-search nil)) ; do CamelCaps links
                 (replace-regexp-in-string
-                 "\\(^\\|[^[!]\\)\\([A-Z][a-z0-9]+[A-Z][a-z0-9]+\\)"
+                 (rx
+                  (or buffer-start bol bos)
+                  (group
+                   (? (not (any "[")))
+                   (group
+                    (>= 2 (and (any "A-Z")(one-or-more (any "a-z")))))))
                  (lambda (m)
-                   (let ((link (match-string 2 m)))
+                   (let ((link (match-string 1 m)))
                      (format
                       "<a href='%s'>%s</a>"
                       (funcall creole-link-resolver-fn link)
