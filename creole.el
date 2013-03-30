@@ -663,16 +663,15 @@ possible to use the `cadr' of the style to add colors."
                        :css-list css-list)
                       (setq
                        result
-                        (buffer-substring
-                         (point-min)
-                         (point-max))))
+                       (buffer-substring
+                        (point-min)
+                        (point-max))))
                     (if (called-interactively-p 'interactive)
                         (switch-to-buffer htmlbuf)
-                      (with-current-buffer htmlbuf
-                        (set-buffer-modified-p nil))
-                      (kill-buffer htmlbuf))
-                    result)))))
-        (concat "<pre>\n" text "\n</pre>")))))
+                        (with-current-buffer htmlbuf
+                          (set-buffer-modified-p nil))
+                        (kill-buffer htmlbuf))
+                    result)))))))))
 
 (defun creole-content-list (structure)
   "Add a table of contents list to the STRUCTURE.
