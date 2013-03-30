@@ -46,10 +46,16 @@ broken over lines]]"))))
          (equal
           (creole-link-parse "OtherLongerThing")
           "<a href='OtherLongerThing.creole'>OtherLongerThing</a>"))
+        ;; Without oddmuse we don't match []
         (should
          (equal
           (creole-link-parse "[OtherLongerThing]")
-          "<a href='OtherLongerThing'>OtherLongerThing</a>"))))))
+          "[OtherLongerThing]"))
+        (let ((creole-oddmuse-on t))
+          (should
+           (equal
+            (creole-link-parse "[OtherLongerThing]")
+            "<a href='OtherLongerThing.creole'>OtherLongerThing</a>")))))))
 
 (ert-deftest creole-link-parse-resolver ()
   (let ((creole-link-resolver-fn 'creole/link-resolve))
