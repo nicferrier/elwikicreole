@@ -546,6 +546,23 @@ We use `orgtbl-to-generic' to do this."
            ))))
     value))
 
+(defun creole-htmlize/mode-func (text)
+  "Work out the mode function for TEXT."
+  (cond
+    ((string-match-p "^##! \\(.*\\)\n" text)
+     (intern
+      (concat
+       (or (match-string 1 text)
+           (downcase mode-name))
+       "-mode")))
+    ((string-match-p "^\\(;;[;]* .*\\|(\\)" text)
+     ;; It's lisp
+     (if (string-match-p "^.* -*- .*" text)
+         'emacs-lisp-mode
+         'lisp-mode))
+    ((string-match-p "^#!/bin/[a-z]+sh$" text)
+     'shell-script-mode)))
+
 (defun creole-htmlize-string (text)
   "Make TEXT syntax coloured HTML using Emacs font-lock.
 
