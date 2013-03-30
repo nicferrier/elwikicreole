@@ -6,6 +6,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
 ;; Version: 0.8.21
+;; Package-requires: ((el-x "0.2.1"))
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -42,6 +43,8 @@
 
 (require 'htmlfontify)
 (require 'org-table)
+(require 'rx)
+(require 'dflet)
 (require 'cl)
 
 (defgroup creole nil
