@@ -347,6 +347,13 @@ Returns a list of parsed elements."
                                (list
                                 (cons 'preformatted (match-string 1)))))
              (forward-line))
+            ((and creole-oddmuse-on (looking-at "^\n +[^-]"))
+             (let* ((start (point))
+                    (end (progn (next-line)
+                                (re-search-forward "^$" nil t)))
+                    (str (buffer-substring start end)))
+               (setq res (append res (list (cons 'preformatted str))))
+               (goto-char end)))
             (;; Lisp-plugin
              (looking-at "^\n<<($")
              (if (not
