@@ -32,13 +32,24 @@ broken over lines</a>"
 broken over lines]]"))))
 
 (ert-deftest creole-link-parse-camel ()
-  (should (equal "ThisThing"
-                 (creole-link-parse "ThisThing")))
-  (let ((creole-link-resolver-fn 'creole/link-resolve))
+  (let (creole-link-resolver-fn)
+    (should (equal (creole-link-parse "ThisThing")
+                   "ThisThing")))
+  (let ((creole-link-resolver-fn 'creole/link-resolve)
+        (link-thing "ThisThing.creole"))
     (flet ((directory-files (dir &optional full match nosort)
-             (list "ThisThing.creole")))
-      (should (equal "<a href='ThisThing.creole'>ThisThing</a>"
-                     (creole-link-parse "ThisThing"))))))
+             (list link-thing)))
+      (should (equal (creole-link-parse "ThisThing")
+                     "<a href='ThisThing.creole'>ThisThing</a>"))
+      (let ((link-thing "OtherLongerThing.creole"))
+        (should
+         (equal
+          (creole-link-parse "OtherLongerThing")
+          "<a href='OtherLongerThing.creole'>OtherLongerThing</a>"))
+        (should
+         (equal
+          (creole-link-parse "[OtherLongerThing]")
+          "<a href='OtherLongerThing'>OtherLongerThing</a>"))))))
 
 (ert-deftest creole-link-parse-resolver ()
   (let ((creole-link-resolver-fn 'creole/link-resolve))
