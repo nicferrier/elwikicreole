@@ -786,7 +786,7 @@ int main(char **argv, int argc)
 }
 "))
          (style-decl
-          (creole/css-list-to-style-decl
+          (creole-css-list-to-style-decl
            (get-text-property 0 :css-list fontified))))
     (should (string-match "^span.keyword" style-decl))
     (should (string-match "^span.default" style-decl))
