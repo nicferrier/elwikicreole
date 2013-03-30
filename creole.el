@@ -132,7 +132,8 @@ turns on CamelCase linking."
                   (group
                    (? (not (any "[")))
                    (group
-                    (>= 2 (and (any "A-Z")(one-or-more (any "a-z")))))))
+                    (>= 2 (and (any "A-Z")
+                               (one-or-more (any "a-z")))))))
                  (lambda (m)
                    (let ((link (match-string 1 m)))
                      (format
