@@ -641,14 +641,11 @@ possible to use the `cadr' of the style to add colors."
             ;; behaviour - no header, no footer and the styles list is
             ;; captured rather than written out.
             (let (css-list)
-              (flet ((hfy-sprintf-stylesheet
-                      (css file)
-                      (setq css-list css)
-                      ""))
+              (flet ((hfy-sprintf-stylesheet (css file)
+                       (setq css-list css)
+                       ""))
                 (let ((hfy-display-class '((type x-toolkit)))
-                      (hfy-page-footer
-                       (lambda (&optional file-name)
-                         "")))
+                      (hfy-page-footer (lambda (&optional file-name) "" "")))
                   (let (result
                         (htmlbuf
                          (flet
