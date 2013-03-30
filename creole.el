@@ -214,24 +214,35 @@ links, italic, bold, line break or inline preformatted markup.
 
 Returns a copy of TEXT with the WikiCreole replaced with
 appropriate HTML."
-  (creole-image-parse
-   (creole-link-parse
-    (replace-regexp-in-string
-     "\\*\\*\\(\\(.\\|\n\\)*?\\)\\*\\*"
-     "<strong>\\1</strong>"
-     (replace-regexp-in-string
-      "\\([^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
-      "\\1<em>\\2</em>"
-      (replace-regexp-in-string
-       "^//\\(\\(.\\|\n\\)*?[^:]\\)//"
-       "<em>\\1</em>"
-       (replace-regexp-in-string
-        "{{{\\(\\(.\\|\n\\)*?\\)}}}"
-        "<code>\\1</code>"
-        (replace-regexp-in-string
-         "\\\\"
-         "<br/>"
-         text))))))))
+  (let ((transformed
+         (replace-regexp-in-string
+          "\\*\\*\\(\\(.\\|\n\\)*?\\)\\*\\*"
+          "<strong>\\1</strong>"
+          (replace-regexp-in-string
+           "\\([^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
+           "\\1<em>\\2</em>"
+           (replace-regexp-in-string
+            "^//\\(\\(.\\|\n\\)*?[^:]\\)//"
+            "<em>\\1</em>"
+            (replace-regexp-in-string
+             "{{{\\(\\(.\\|\n\\)*?\\)}}}"
+             "<code>\\1</code>"
+             (replace-regexp-in-string
+              "\\\\"
+              "<br/>"
+              text)))))))
+    (if creole-oddmuse-on
+        (creole-image-parse
+         (creole-link-parse
+          (replace-regexp-in-string
+           "'''\\(.*?\\)'''"
+           "<em>\\1</em>"
+           (replace-regexp-in-string
+            "##\\(.*?\\)##"
+            "<code>\\1</code>"
+            transformed))))
+        ;; Else
+        (creole-image-parse (creole-link-parse transformed)))))
 
 (defvar creole-recalculate-org-tables t
   "Indicates that Org tables should be recalculated inplace.
