@@ -289,6 +289,10 @@ Returns a list of parsed elements."
                                      ;; deal with here
                                      (match-string 2)))))
                  (forward-line))))
+            (;; OddMuse portraits
+             (and creole-oddmuse-on (looking-at "^portrait:\\(.*\\)"))
+             (setq res (append res (list (cons 'portrait (match-string 1)))))
+             (forward-line))
             (;; Table
              (looking-at "^|")
              ;; Recalculate tables?
@@ -797,6 +801,10 @@ Returns the HTML-BUFFER."
                    (insert (format "<h4>%s</h4>\n" (cdr element))))
                   (heading5
                    (insert (format "<h5>%s</h5>\n" (cdr element))))
+                  (portrait ; this is oddmuse/emacswiki stuff
+                   (insert (format
+                            "<img class='portrait' src='%s'><img>"
+                            (cdr element))))
                   ;; Tables
                   (table
                    (insert (creole/html-table (cdr element))))
