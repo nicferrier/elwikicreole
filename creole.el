@@ -561,9 +561,12 @@ We use `orgtbl-to-generic' to do this."
 (defun creole-htmlize/mode-func (text)
   "Work out the mode function for TEXT.
 
-The Emacs mode function to use to color the text is returned.
-This either uses some heuristics or a specific instruction at the
-start of the text:
+A list is returned.  The first element is whether the first line
+of the text should be stripped or not (if forcing marker text is
+used that should be the case).  The `cdr' of the cons is the
+Emacs mode function to use to color the text.  This either uses
+some heuristics or a specific instruction at the start of the
+text:
 
  ##! C
  int main(char** argv, int argc)
@@ -578,18 +581,21 @@ change to something heavily based on existing mode choosing
 logic."
   (cond
     ((string-match-p "^##! \\(.*\\)\n" text)
-     (intern
-      (concat
-       (or (match-string 1 text)
-           (downcase mode-name))
-       "-mode")))
+     (list
+      t
+      (intern
+       (concat
+        (or (match-string 1 text)
+            (downcase mode-name))
+        "-mode"))))
     ((string-match-p "^\\(;;[;]* .*\\|(\\)" text)
      ;; It's lisp
-     (if (string-match-p "^.* -*- .*" text)
-         'emacs-lisp-mode
-         'lisp-mode))
+     (list nil (if (string-match-p "^.* -*- .*" text)
+                   'emacs-lisp-mode
+                   'lisp-mode)))
     ((string-match-p "^#!/bin/[a-z]+sh$" text)
-     'shell-script-mode)))
+     (list nil 'shell-script-mode))
+    (t (list nil text))))
 
 (defun creole-htmlize-string (text)
   "Make TEXT syntax coloured HTML using Emacs font-lock.
@@ -618,16 +624,17 @@ possible to use the `cadr' of the style to add colors."
       (buffer-substring
        (point-min)
        (point-max)))))
-  (let ((mode-func (creole-htmlize/mode-func text)))
+  (destructuring-bind (strip-line mode-func) (creole-htmlize/mode-func text)
     (save-match-data
       (if (not (functionp mode-func))
           (concat "<pre>\n" text "\n</pre>")
           (with-temp-buffer
             ;; Get font-lock?
             (insert text "\n")
-            ;; Kill the mode variable line
-            (goto-char (point-min))
-            (kill-line)
+            (when strip-line
+              ;; Kill the mode variable line
+              (goto-char (point-min))
+              (kill-line))
             ;; Now switch that mode into the new mode
             (funcall mode-func)
             (whitespace-mode -1)
