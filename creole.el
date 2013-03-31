@@ -722,19 +722,8 @@ that mode.
 If ERASE-EXISTING is not nil then any existing content in the
 HTML-BUFFER is erased before rendering.  By default this is true.
 
-If DO-FONT-LOCK is not nil then any pre-formatted areas are
-examined for Emacs mode comments in the first line.  If present
-then `htmlify' is run on the pre-formatted area using the Emacs
-mode specified.  For example:
-
- {{{
- ##! emacs-lisp
- (let ((x 10))
-  x)
- }}}
-
-will `htmlify' the code excerpt as Emacs Lisp.  Note that an
-HTML-PRE tag is not used for the text in that case.
+If DO-FONT-LOCK is not nil then any pre-formatted areas tested
+for fontification with `creole-htmlize/mode-func'.
 
 If SWITCH-TO is not nil then the HTML-BUFFER is switched to when
 the export is done.
