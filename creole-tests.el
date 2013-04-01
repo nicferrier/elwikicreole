@@ -788,11 +788,11 @@ int main(char **argv, int argc)
          (style-decl
           (creole-css-list-to-style-decl
            (get-text-property 0 :css-list fontified))))
-    (should (string-match "^span.keyword" style-decl))
-    (should (string-match "^span.default" style-decl))
-    (should (string-match "^span.variable-name" style-decl))
-    (should (string-match "^span.function-name" style-decl))
-    (should (string-match "^span.type" style-decl))))
+    (should (string-match-p "^span.keyword" style-decl))
+    (should (string-match-p "^span.default" style-decl))
+    (should (string-match-p "^span.variable-name" style-decl))
+    (should (string-match-p "^span.function-name" style-decl))
+    (should (string-match-p "^span.type" style-decl))))
 
 
 (ert-deftest creole-moustache ()
@@ -1099,12 +1099,12 @@ doSomething();
           (let ((t1 (encode-time 0 32 9 1 12 2011))
                 (t2 (encode-time 0 22 9 1 12 2011)))
             (cond
-             ((string-match ".*/file1.html" file-name)
+             ((string-match-p ".*/file1.html" file-name)
               `(nil 1 "uid" "grp"
                     ,t1 ,t1 ,t1
                     200 "-rwxrwxrwx-" t
                     1333331114234 0))
-             ((string-match ".*/file2.html" file-name)
+             ((string-match-p ".*/file2.html" file-name)
               `(nil 1 "uid" "grp"
                     ,t2 ,t2 ,t2
                     157 "-rwxrwxrwx-" t
