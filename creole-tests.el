@@ -110,7 +110,15 @@ broken over lines]]")))))
   (should (equal "<img src='image.jpg' alt='alternate text' title='alternate text' width='20' />"
                  (creole-image-parse "{{image.jpg?size=20|alternate text}}")))
   (should (equal "<img src='image.jpg' alt='image.jpg' width='20' height='10' />"
-                 (creole-image-parse "{{image.jpg?size=20x10}}"))))
+                 (creole-image-parse "{{image.jpg?size=20x10}}")))
+  (let ((creole-link-resolver-fn
+         (lambda (name)
+           (concat name ".jpg"))))
+    (flet ((directory-files (dir &optional full match nosort)
+             (list "thing.jpg")))
+      (should
+       (equal (creole-image-parse "{{thing}}")
+              "<img src='thing.jpg' alt='thing' />")))))
 
 (ert-deftest creole-block-parse ()
   "Test the block parsing routines."

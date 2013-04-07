@@ -186,7 +186,10 @@ a Width, or a WidthxHeight specification.
           ;; Whether we have a class to apply or not
           (if creole-image-class (format "class='%s' " creole-image-class) "")
           ;; URL of the image
-          (match-string 1 m)
+          (if (functionp creole-link-resolver-fn)
+              (funcall creole-link-resolver-fn (match-string 1 m))
+              ;; Else
+              (match-string 1 m))
           ;; if we don't have an alternate, use the URL
           (if (match-string 4 m)
               (setq title (match-string 5 m))
