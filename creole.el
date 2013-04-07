@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.8.22
+;; Version: 0.8.23
 ;; Package-requires: ((el-x "0.2.1"))
 ;; Keywords: lisp, creole, wiki
 
@@ -579,23 +579,24 @@ Shows how to indicate some C.
 The heuristics are very simple right now.  They will probably
 change to something heavily based on existing mode choosing
 logic."
-  (cond
-    ((string-match-p "^##! \\(.*\\)\n" text)
-     (list
-      t
-      (intern
-       (concat
-        (or (match-string 1 text)
-            (downcase mode-name))
-        "-mode"))))
-    ((string-match-p "^\\(;;[;]* .*\\|(\\)" text)
-     ;; It's lisp
-     (list nil (if (string-match-p "^.* -*- .*" text)
-                   'emacs-lisp-mode
-                   'lisp-mode)))
-    ((string-match-p "^#!/bin/[a-z]+sh$" text)
-     (list nil 'shell-script-mode))
-    (t (list nil text))))
+  (save-match-data 
+    (cond
+      ((string-match "^##! \\(.*\\)\n" text)
+       (list
+        t
+        (intern
+         (concat
+          (or (match-string 1 text)
+              (downcase mode-name))
+          "-mode"))))
+      ((string-match-p "^\\(;;[;]* .*\\|(\\)" text)
+       ;; It's lisp
+       (list nil (if (string-match-p "^.* -*- .*" text)
+                     'emacs-lisp-mode
+                     'lisp-mode)))
+      ((string-match-p "^#!/bin/[a-z]+sh$" text)
+       (list nil 'shell-script-mode))
+      (t (list nil text)))))
 
 (defun creole-htmlize-string (text)
   "Make TEXT syntax coloured HTML using Emacs font-lock.
