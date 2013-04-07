@@ -173,7 +173,8 @@ The 'size=' is optional, and I keep there because this way you
 could add more parameters to the image if you needed them. By
 now, a size is supposed, and the values are assumed to be either
 a Width, or a WidthxHeight specification.
-"
+
+If defined then `creole-link-resolver-fn' is used for links."
   (replace-regexp-in-string
    "{{\\([^?|}]+\\)\\(\\?\\([^?|}]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
    (lambda (m)
