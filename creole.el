@@ -704,8 +704,8 @@ The list is only added if the STRUCTURE has at least 2 headings."
                               in (cdr heading-texts)
                               collect (car data)))))
           (loop for el in structure
-             if (equal el (elt headings 2))
-             collect toc
+             if (equal el (elt headings 0))
+             append `((heading2 . "Table of content") ,toc)
              collect el)))))
 
 (defvar creole-structured '()
