@@ -481,6 +481,28 @@ difficult."
 </table>
 "))))
 
+(ert-deftest creole/heading-test>id ()
+  "Test that we convert heading text to HTML IDs."
+  (should (equal
+           "this-is-it-then"
+           (creole/heading-text->id "this is it then")))
+  (should (equal
+           "This-is-it-then"
+           (creole/heading-text->id "This is it then"))))
+
+(ert-deftest creole/heading->html ()
+  "Test the heading production."
+  (should (equal (creole/heading->html
+                  '(heading1 "this is a test"))
+                 "<h1>this is a test</h1>\n"))
+  ;; Now test with automatic anchor links
+  (let ((creole-oddmuse-on t))
+    (should
+     (equal
+      (creole/heading->html
+       '(heading1 "this is a test"))
+      "<a id='this-is-a-test'/>\n<h1>this is a test</h1>\n"))))
+
 (ert-deftest creole-html-with-links ()
   (with-temp-buffer
     (insert "= Heading! =\n")

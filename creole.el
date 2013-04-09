@@ -684,22 +684,29 @@ possible to use the `cadr' of the style to add colors."
   "Add a table of contents list to the STRUCTURE.
 
 The list is only added if the STRUCTURE has at least 2 headings."
-  (let ((headings
-         (loop for el in structure
-            if (memq
-                (car el)
-                '(heading1 heading2 heading3 heading4))
-            collect el)))
+  (let* ((heads '(heading1 heading2 heading3 heading4))
+         (headings
+          (loop for el in structure
+             if (memq (car el) heads)
+             collect el))
+         (heading-texts
+          (loop for el in headings
+             collect (list
+                      (car el)
+                      (format
+                       "<a href='#%s'>%s</a>"
+                       (creole/heading-text->id (cdr el))
+                       (cdr el))))))
     (if (< (length headings) 2)
         structure
         ;; Else add the index before the 2nd index
-        (let ((toc
-               `(ul
-                 ,@(loop for (head . data) in headings collect data))))
-          ;; how to get this into the structure
-          ;;(loop )
-          structure
-          ))))
+        (let* ((toc `(ul ,@(loop for (head . data)
+                              in (cdr heading-texts)
+                              collect (car data)))))
+          (loop for el in structure
+             if (equal el (elt headings 2))
+             collect toc
+             collect el)))))
 
 (defvar creole-structured '()
   "A buffer local containing the parsed creole for the buffer.")
@@ -712,6 +719,30 @@ The list is only added if the STRUCTURE has at least 2 headings."
      for stage in pipeline
        do (setq result (funcall stage result))
        finally return result))
+
+(defun creole/heading-text->id (heading-text)
+  "Make HEADING-TEXT into an HTML ID."
+  (replace-regexp-in-string " " "-" heading-text))
+
+(defun creole/heading->html (heading-cons)
+  "Convert a heading to HTML.
+
+If `creole-oddmuse-on' is `t' then an anchor is added
+automatically."
+  (let* ((h-str (symbol-name (car heading-cons)))
+         (level (save-match-data
+                  (string-match "heading\\([0-9]+\\)" h-str)
+                  (match-string 1 h-str)))
+         (h-text (if (listp (cdr heading-cons))
+                     (cadr heading-cons)
+                     (cdr heading-cons))))
+    (format
+     "%s<h%s>%s</h%s>\n"
+     (if creole-oddmuse-on
+         (format
+          "<a id='%s'/>\n"
+          (creole/heading-text->id h-text)) "")
+     level h-text level)))
 
 (defun* creole-html (docbuf
                      &optional html-buffer
@@ -789,19 +820,9 @@ Returns the HTML-BUFFER."
                   ((ul ol)
                    ;; FIXME lists don't do block level replacement yet!
                    (creole/html-list syntax (cdr element)))
-                  ;; Headings - FIXME - we need to change these
-                  ;; obviously to something that can cope with any
-                  ;; level of heading
-                  (heading1
-                   (insert (format "<h1>%s</h1>\n" (cdr element))))
-                  (heading2
-                   (insert (format "<h2>%s</h2>\n" (cdr element))))
-                  (heading3
-                   (insert (format "<h3>%s</h3>\n" (cdr element))))
-                  (heading4
-                   (insert (format "<h4>%s</h4>\n" (cdr element))))
-                  (heading5
-                   (insert (format "<h5>%s</h5>\n" (cdr element))))
+                  ;; Headings
+                  ((heading1 heading2 heading3 heading4 heading5)
+                   (insert (creole/heading->html element)))
                   (portrait ; this is oddmuse/emacswiki stuff
                    (insert (format
                             "<img class='portrait' src='%s'><img>"
