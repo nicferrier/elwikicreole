@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.9.20130407
+;; Version: 0.9.20130507
 ;; Package-requires: ((el-x "0.2.1"))
 ;; Keywords: lisp, creole, wiki
 
@@ -724,11 +724,16 @@ The list is only added if the STRUCTURE has at least 2 headings."
   "Make HEADING-TEXT into an HTML ID."
   (replace-regexp-in-string " " "-" heading-text))
 
+(defvar creole-do-anchor-headings t
+  "Whether to give each heading it's own anchor.
+
+This behaviour is also controlled by `creole-oddmuse-on'.")
+
 (defun creole/heading->html (heading-cons)
   "Convert a heading to HTML.
 
-If `creole-oddmuse-on' is `t' then an anchor is added
-automatically."
+If `creole-oddmuse-on' or `creole-do-anchor-headings' is `t' then
+an anchor is added automatically."
   (let* ((h-str (symbol-name (car heading-cons)))
          (level (save-match-data
                   (string-match "heading\\([0-9]+\\)" h-str)
@@ -738,10 +743,11 @@ automatically."
                      (cdr heading-cons))))
     (format
      "%s<h%s>%s</h%s>\n"
-     (if creole-oddmuse-on
+     (if (or creole-oddmuse-on
+             creole-do-anchor-headings)
          (format
           "<a id='%s'/>\n"
-          (creole/heading-text->id h-text)) "")
+          (creole/heading-text->id h-text)) "") ; else
      level h-text level)))
 
 (defun* creole-html (docbuf

@@ -492,11 +492,21 @@ difficult."
 
 (ert-deftest creole/heading->html ()
   "Test the heading production."
-  (should (equal (creole/heading->html
-                  '(heading1 "this is a test"))
-                 "<h1>this is a test</h1>\n"))
+  (should
+   (equal
+    (let (creole-oddmuse-on creole-do-anchor-headings)
+      (creole/heading->html
+       '(heading1 "this is a test")))
+    "<h1>this is a test</h1>\n"))
   ;; Now test with automatic anchor links
   (let ((creole-oddmuse-on t))
+    (should
+     (equal
+      (creole/heading->html
+       '(heading1 "this is a test"))
+      "<a id='this-is-a-test'/>\n<h1>this is a test</h1>\n")))
+  (let ((creole-oddmuse-on nil)
+        (creole-do-anchor-headings t))
     (should
      (equal
       (creole/heading->html
@@ -518,7 +528,8 @@ and **bold** and //italics//.\n\n")
       (should
        (equal
         htmlstr
-        "<h1>Heading!</h1>
+        "<a id='Heading!'/>
+<h1>Heading!</h1>
 <p>This is a paragraph.</p>
 <p>This is a paragraph <code>with code</code> and <a href='links'>links</a>
 and <strong>bold</strong> and <em>italics</em>.</p>
@@ -594,7 +605,8 @@ html>>
     (let ((html (creole-html (current-buffer))))
       (with-current-buffer html
         (goto-char (point-min))
-        (should (looking-at "<h1>Heading</h1>
+        (should (looking-at "<a id='Heading'/>
+<h1>Heading</h1>
 <P>This is a paragraph of text</P>"))))))
 
 (ert-deftest creole-list-to-html ()
@@ -677,9 +689,12 @@ html>>
   (with-temp-buffer
     (creole/test-doc (current-buffer))
     (let ((html (creole-html (current-buffer))))
-      (with-current-buffer html
-        (goto-char (point-min))
-        (should (looking-at "<h1>Heading!</h1>
+      (should 
+       (equal
+        (with-current-buffer html (buffer-string))
+        "<a id='Heading!'/>
+<h1>Heading!</h1>
+<a id='Heading2!'/>
 <h2>Heading2!</h2>
 <ol>
 <li>an ordered list item<ol>
@@ -687,6 +702,7 @@ html>>
 </ol>
 </li>
 </ol>
+<a id='Heading3-is-a-multi-word-heading'/>
 <h2>Heading3 is a multi word heading</h2>
 <pre>
 == this is preformatted ==
@@ -715,7 +731,7 @@ that runs over several lines</p>
 </ul>
 <p>This is a paragraph <code>with code</code> and <a href='links'>links</a>
 and <strong>bold</strong> and <em>italics</em>.</p>
-"))))))
+")))))
 
 
 (ert-deftest creole/expand-item-value-mocked-file ()
@@ -726,11 +742,11 @@ and <strong>bold</strong> and <em>italics</em>.</p>
       ;; Mock both these functions to cause the buffer 'file-buffer'
       ;; to be returned from creole/get-file
       (flet ((creole/file-under-root-p
-              (file-name root)
-              nil)
+                 (file-name root)
+               nil)
              (creole/get-file
-              (filename)
-              file-buffer))
+                 (filename)
+               file-buffer))
         (should (equal
                  (cons :string "= A very small creole file =\n")
                  (creole/expand-item-value
@@ -869,6 +885,7 @@ This is a nice simple Creole Wiki file.
             (buffer-substring-no-properties (point-min) (point-max))
             "<html>
 <body>
+<a id='A-Creole-Wiki-file'/>
 <h1>A Creole Wiki file</h1>
 <p>This is a nice simple Creole Wiki file.</p>
 </body>
@@ -913,8 +930,9 @@ too dependent on the particular environment (fonts etc...)."
 
 (ert-deftest creole-wiki-fontify ()
   ;; Font lock testing
-  (creole/wiki-test
-    "= A Creole Document =
+  (let (creole-do-anchor-headings)
+    (creole/wiki-test
+        "= A Creole Document =
 
 {{{
 ##! c
@@ -938,7 +956,7 @@ A preformatted area with styling.
 <p>A preformatted area with styling.</p>
 </body>
 </html>
-" :htmlfontify t))
+" :htmlfontify t)))
 
 
 (ert-deftest creole-wiki-base ()
@@ -950,6 +968,7 @@ This is a Creole document with some stuff in it.
 "
     "<html>
 <body>
+<a id='A-Creole-Document'/>
 <h1>A Creole Document</h1>
 <p>This is a Creole document with some stuff in it.</p>
 </body>
@@ -966,6 +985,7 @@ This is a Creole document with some stuff in it.
     "<html>
 <body>
 <div id='header'>the header</div>
+<a id='A-Creole-Document'/>
 <h1>A Creole Document</h1>
 <p>This is a Creole document with some stuff in it.</p>
 <div id='footer'>the footer</div>
@@ -980,6 +1000,7 @@ This is a Creole document with some stuff in it.
   (flet ((creole/file-under-root-p
           (file-name root)
           "/styles.css"))
+    (let (creole-do-anchor-headings))
     (creole/wiki-test
       "= A Creole Document =
 
@@ -1004,13 +1025,14 @@ This is a Creole document with some stuff in it.
   (flet ((creole/file-under-root-p
           (file-name root)
           "/styles.css"))
-  ;; Test a string specified as the CSS is embedded
-  (creole/wiki-test
-    "= A Creole Document =
+    (let (creole-do-anchor-headings)
+      ;; Test a string specified as the CSS is embedded
+      (creole/wiki-test
+          "= A Creole Document =
 
 This is a Creole document with some stuff in it.
 "
-    "<html>
+          "<html>
 <head>
 <title>A Creole Document</title>
 <style>
@@ -1025,17 +1047,18 @@ font-size: 8pt;
 </body>
 </html>
 "
-    ;; Here's the docroot
-    :docroot "~/elwikicreole/"
-    ;; Here's a string specifying some CSS, clearly not a file
-    :css '("p {
+        ;; Here's the docroot
+        :docroot "~/elwikicreole/"
+        ;; Here's a string specifying some CSS, clearly not a file
+        :css '("p {
 font-size: 8pt;
-}")))
+}"))))
 
   ;; This version tests the full mocking causing embedding
   (with-temp-buffer
     (insert "P { background: blue; }")
-    (let ((css-file-buffer (current-buffer)))
+    (let (creole-do-anchor-headings
+          (css-file-buffer (current-buffer)))
       ;; Mock the 2 functions so that the file is not considered under
       ;; the docroot and so that it's contents if the CSS fragment
       ;; above
@@ -1071,14 +1094,15 @@ P { background: blue; }
 
 (ert-deftest creole-wiki-js ()
   (flet ((creole/file-under-root-p
-          (file-name root)
-          "/scripts.js"))
-    (creole/wiki-test
-      "= A Creole Document =
+             (file-name root)
+           "/scripts.js"))
+    (let (creole-do-anchor-headings)
+      (creole/wiki-test
+          "= A Creole Document =
 
 This is a Creole document with some stuff in it.
 "
-    "<html>
+          "<html>
 <head>
 <title>A Creole Document</title>
 <script src='/scripts.js' language='Javascript'></script>
@@ -1089,14 +1113,14 @@ This is a Creole document with some stuff in it.
 </body>
 </html>
 "
-    :docroot "~/elwikicreole/"
-    :javascript '("~/elwikicreole/scripts.js")))
-  (creole/wiki-test
-    "= A Creole Document =
+        :docroot "~/elwikicreole/"
+        :javascript '("~/elwikicreole/scripts.js"))
+      (creole/wiki-test
+          "= A Creole Document =
 
 This is a Creole document with some stuff in it.
 "
-    "<html>
+          "<html>
 <head>
 <title>A Creole Document</title>
 <script>
@@ -1114,11 +1138,11 @@ doSomething();
 </body>
 </html>
 "
-    :docroot "~/elwikicreole/"
-    :javascript '("$(document).ready(function () {
+        :docroot "~/elwikicreole/"
+        :javascript '("$(document).ready(function () {
 doSomething();
 });
-")))
+")))))
 
 (ert-deftest creole-directory-list ()
   (flet ((directory-files
