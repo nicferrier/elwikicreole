@@ -100,14 +100,14 @@ may as well resolve the extension in the webapp."
       (let ((link (match-string 1 m))
             (text (match-string 5 m)))
         (list
-         (if (and (not (string-match-p "\\(http\\|ftp\\|mailto\\)+:" link))
+         (if (and (not (string-match-p (rx (or "ftp" "http" "mailto") ":") link))
                   (functionp creole-link-resolver-fn))
              (funcall creole-link-resolver-fn link) link) text)))
      ;; We only have a url
      ((match-string 1 m)
       (let ((link (match-string 1 m)))
         (list
-         (if (and (not (string-match-p "\\(http\\|ftp\\|mailto\\)+:" link))
+         (if (and (not (string-match-p (rx (or "ftp" "http" "mailto") ":") link))
                   (functionp creole-link-resolver-fn))
              (funcall creole-link-resolver-fn link) link)
          link))))))
@@ -132,8 +132,8 @@ turns on CamelCase linking."
                   (group
                    (? (not (any "[")))
                    (group
-                    (>= 2 (and (any "A-Z")
-                               (one-or-more (any "a-z")))))))
+                    (>= 2 (and (any upper)
+                               (one-or-more (any lower)))))))
                  (lambda (m)
                    (let ((link (match-string 1 m)))
                      (format
@@ -144,13 +144,27 @@ turns on CamelCase linking."
               text))
          (real-creole
           (replace-regexp-in-string
-           "\\[\\[\\(\\(\\(http\\|ftp\\|mailto\\):\\)*[^]|]+\\)\\(|\\(\\([^]]+\\)\\)\\)*\\]\\]"
+           (rx "[["
+               (group
+                (* (group (or "ftp" "http" "mailto") ":"))
+                (+ (not (any "]|"))))
+               (*
+                (group
+                 "|" (group (group (+ (not (any "]")))))))
+               "]]")
            'creole/link-replacer
            resolvable-link))
          (oddmuse
           (when creole-oddmuse-on
             (replace-regexp-in-string
-             "\\[\\(\\([A-Za-z]+:\\)*[^]| ]+\\)\\([| ]\\(\\([^]]+\\)\\)\\)*\\]"
+             (rx "["
+                 (group
+                  (* (group (and (+ (in alpha))) ":"))
+                  (+ (not (any "]| "))))
+                 (* (group
+                     (any "| ")
+                     (group (group (+ (not (any ?\])))))))
+                 "]")
              'creole/link-replacer
              real-creole)))
          (bracket-resolved (if oddmuse oddmuse real-creole)))
@@ -176,7 +190,11 @@ a Width, or a WidthxHeight specification.
 
 If defined then `creole-link-resolver-fn' is used for links."
   (replace-regexp-in-string
-   "{{\\([^?|}]+\\)\\(\\?\\([^?|}]+\\)\\)*\\(|\\([^}]+\\)\\)?}}"
+   (rx "{{"
+       (group (+ (not (any "?|}"))))
+       (* (group "?" (group (+ (not (any "?|}"))))))
+       (? (group "|" (group (+ (not (any "}"))))))
+       "}}")
    (lambda (m)
      (let (title)
        (apply
@@ -202,7 +220,10 @@ If defined then `creole-link-resolver-fn' is used for links."
               (let ((options (match-string 3 m)))
                 (save-match-data
                   ;; 'size=' is optional and is the only parameter right now
-                  (string-match "\\([0-9]+\\)\\(x\\([0-9]+\\)\\)?" options)
+                  (string-match
+                   (rx (group (+ digit))
+                       (? (group (and ?x (group (+ digit))))))
+                   options)
                   (when (match-string 1 options)
                     (concat
                      "width='" (match-string 1 options) "' "
@@ -221,29 +242,43 @@ Returns a copy of TEXT with the WikiCreole replaced with
 appropriate HTML."
   (let ((transformed
          (replace-regexp-in-string
-          "\\*\\*\\(\\(.\\|\n\\)*?\\)\\*\\*"
+          (rx "**"
+              (group (*? anything))
+              "**")
           "<strong>\\1</strong>"
           (replace-regexp-in-string
-           "\\([^:]\\)//\\(\\(.\\|\n\\)*?[^:]\\)//"
+           (rx (group (not (any ":")))
+               "//"
+               (group (*? anything) (not (any ":")))
+               "//")
            "\\1<em>\\2</em>"
            (replace-regexp-in-string
-            "^//\\(\\(.\\|\n\\)*?[^:]\\)//"
+            (rx bol
+                "//"
+                (group (*? anything) (not (any ":")))
+                "//")
             "<em>\\1</em>"
             (replace-regexp-in-string
-             "{{{\\(\\(.\\|\n\\)*?\\)}}}"
+             (rx "{{{"
+                 (group (*? anything))
+                 "}}}")
              "<code>\\1</code>"
              (replace-regexp-in-string
-              "\\\\"
+              (rx ?\\)
               "<br/>"
               text)))))))
     (if creole-oddmuse-on
         (creole-image-parse
          (creole-link-parse
           (replace-regexp-in-string
-           "'''\\(.*?\\)'''"
+           (rx "'''"
+               (group (*? not-newline))
+               "'''")
            "<em>\\1</em>"
            (replace-regexp-in-string
-            "##\\(.*?\\)##"
+            (rx "##"
+                (group (*? not-newline))
+                "##")
             "<code>\\1</code>"
             transformed))))
         ;; Else
@@ -272,15 +307,25 @@ Returns a list of parsed elements."
       (let ((res '()))
         (while (not (eobp))
           (cond
-            (;; Heading
-             (looking-at "^\\(=+\\)[ \t]")
+           (;; Heading
+            (looking-at
+             (rx bol
+                 (group (+ "="))
+                 (in blank)))
              (let ((level (length (match-string 1))))
                ;; Actually, the end = is optional... not sure if, when
                ;; there is an end = it has to be the same number as the
                ;; first one
                (if (not
                     (re-search-forward
-                     "^\\(=+\\)[ \t]+\\(.*\\)[ \t]+\\(=+\\)$" nil 't))
+                     (rx bol
+                         (group (+ "="))
+                         (+ blank)
+                         (group (* any))
+                         (+ blank)
+                         (group (+ "="))
+                         eol)
+                     nil 't))
                    (error "Creole: badly formatted heading"))
                (when (equal (length (match-string 3))
                             level)
@@ -294,7 +339,8 @@ Returns a list of parsed elements."
                                      (match-string 2)))))
                  (forward-line))))
             (;; OddMuse portraits
-             (and creole-oddmuse-on (looking-at "^portrait:\\(.*\\)"))
+             (and creole-oddmuse-on (looking-at
+                                     (rx bol "portrait:" (group (* any)))))
              (setq res (append res (list (cons 'portrait (match-string 1)))))
              (forward-line))
             (;; Table
@@ -315,7 +361,11 @@ Returns a list of parsed elements."
                  (goto-char (point-max)))
                (beginning-of-line)))
             (;; Unordered list item
-             (looking-at "^\\(\\*+\\)[ \t]\\(.*\\)")
+             (looking-at
+              (rx bol
+                  (group (+ "*"))
+                  (in blank)
+                  (group (* any))))
              (let ((level (length (match-string 1))))
                (setq res (append res
                                  (list
@@ -327,7 +377,11 @@ Returns a list of parsed elements."
                                    (match-string 2)))))
                (forward-line)))
             (;; Ordered list item
-             (looking-at "^\\(#+\\)[ \t]\\(.*\\)")
+             (looking-at
+              (rx bol
+                  (group (+ "#"))
+                  (in blank)
+                  (group (* any))))
              (let ((level (length (match-string 1))))
                (setq res (append res
                                  (list
@@ -339,16 +393,26 @@ Returns a list of parsed elements."
                                    (match-string 2)))))
                (forward-line)))
             (;; Horizontal rule
-             (looking-at "^[ \t]*----[ \t]*$")
+             (looking-at
+              (rx bol
+                  (* (in blank))
+                  "----"
+                  (* (in blank))
+                  eol))
              (setq res (append res
                                (list
                                 (cons 'hr ""))))
              (forward-line))
             (;; Pre-formatted block
-             (looking-at "^\n{{{$")
+             (looking-at
+              (rx bol "\n{{{" eol))
              (if (not
                   (re-search-forward
-                   "^\n{{{\n\\(\\(.\\|\n\\)*?\\)\n}}}[ ]*$"
+                   (rx bol
+                       "\n{{{\n"
+                       (group (*? anything))
+                       "\n}}}" (* space)
+                       eol)
                    nil t))
                  (error "Creole: bad preformatted block"))
              (setq res (append res
@@ -363,10 +427,19 @@ Returns a list of parsed elements."
                (setq res (append res (list (cons 'preformatted str))))
                (goto-char end)))
             (;; Lisp-plugin
-             (looking-at "^\n<<($")
+             (looking-at
+              (rx bol "\n" "<<(" eol))
              (if (not
                   (re-search-forward
-                   "^\n<<(\n\\(\\(.\\|\n\\)*?\\)\n)>>[ ]*$"
+                   (rx bol
+                       "\n"
+                       "<<("
+                       "\n"
+                       (group (*? anything))
+                       "\n"
+                       ")>>"
+                       (* space)
+                       eol)
                    nil t))
                  (error "Creole: bad Lisp plugin block"))
              (let* ((plugin-lisp (match-string 1))
@@ -380,22 +453,30 @@ Returns a list of parsed elements."
              (looking-at "^\n<<html$")
              (if (not
                   (re-search-forward
-                   "^\n<<html\n\\(\\(.\\|\n\\)*?\\)\nhtml>>$" nil t))
+                   (rx bol
+                       "\n"
+                       "<<html"
+                       "\n"
+                       (group (*? anything))
+                       "\n"
+                       "html>>"
+                       eol) nil t))
                  (error "Creole: bad HTML plugin block"))
              (setq res (append res
                                (list
                                 (cons 'plugin-html (match-string 1)))))
              (forward-line))
             (;; Paragraph line
-             (and (looking-at "^[^=*]")
-                  (not (looking-at "^$")))
+             (and (looking-at (rx bol (not (any "=*"))))
+                  (not (looking-at (rx bol eol))))
              (let* ((start (point))
                     (end
                      (save-match-data
                        (let* ((matched-end
                                ;; Find the end - the end is actually BEFORE this
                                (re-search-forward
-                                "\\(^$\\)\\|\\(^[=*]\\)"
+                                (rx (or (group bol eol)
+                                        (group bol (in "=*"))))
                                 nil 't))
                               (matched (if matched-end (match-string 0))))
                          (cond
@@ -445,7 +526,9 @@ For example:
   => (unordered . 10)"
   (save-match-data
     (let ((s (symbol-name list-symbol)))
-      (when (string-match "\\([uo]l\\)\\([0-9]+\\)" s)
+      (when (string-match (rx (group (in "uo") "l")
+                              (group (+ digit)))
+                          s)
         (cons
          (intern (match-string 1 s))
          (string-to-number (match-string 2 s)))))))
@@ -583,9 +666,12 @@ Shows how to indicate some C.
 The heuristics are very simple right now.  They will probably
 change to something heavily based on existing mode choosing
 logic."
-  (save-match-data 
+  (save-match-data
     (cond
-      ((string-match "^##! \\(.*\\)\n" text)
+      ((string-match (rx bol "##! "
+                         (group (* any))
+                         "\n")
+                     text)
        (list
         t
         (intern
@@ -593,12 +679,12 @@ logic."
           (or (match-string 1 text)
               (downcase mode-name))
           "-mode"))))
-      ((string-match-p "^\\(;;[;]* .*\\|(\\)" text)
+      ((string-match-p (rx bol (or (group ";;" (* ";") " " (* any)) "(")) text)
        ;; It's lisp
-       (list nil (if (string-match-p "^.* -*- .*" text)
+       (list nil (if (string-match-p (rx bol (* any) " -*- " (* any)) text)
                      'emacs-lisp-mode
-                     'lisp-mode)))
-      ((string-match-p "^#!/bin/[a-z]+sh$" text)
+                   'lisp-mode)))
+      ((string-match-p (rx bol "#!/bin/" (+ lower) "sh" eol) text)
        (list nil 'shell-script-mode))
       (t (list nil text)))))
 
@@ -731,7 +817,9 @@ If `creole-oddmuse-on' is `t' then an anchor is added
 automatically."
   (let* ((h-str (symbol-name (car heading-cons)))
          (level (save-match-data
-                  (string-match "heading\\([0-9]+\\)" h-str)
+                  (string-match
+                   (rx "heading" (group (+ digit)))
+                   h-str)
                   (match-string 1 h-str)))
          (h-text (if (listp (cdr heading-cons))
                      (cadr heading-cons)
@@ -795,7 +883,9 @@ Returns the HTML-BUFFER."
          (or html-buffer
              (get-buffer-create
               (replace-regexp-in-string
-               "\\(\\**\\)\\(.*\\)\\(\\**\\)"
+               (rx (group (* "*"))
+                   (group (* any))
+                   (group (* "*")))
                "*creolehtml\\2.html"
                (buffer-name
                 (if (bufferp docbuf)
@@ -913,7 +1003,9 @@ Return a cons cell with the `car' identifying the type, one of:
 
 and the `cdr' being the expanded string."
   (save-match-data
-    (if (string-match "^\\(\\./\\|/\\|~\\).*" item)
+    (if (string-match
+         (rx bol (or "./" "/" "~") (* any))
+         item)
         ;; file-name templating has been requested
         ;; Check if we have a docroot that works
         (let* ((path-info (creole/file-under-root-p item docroot)))
@@ -1175,7 +1267,9 @@ Eg:
 
   =>  \"<textarea>this is my text</textarea>\""
   (replace-regexp-in-string
-   "{{\\([A-Za-z0-9_-]+\\)}}"
+   (rx "{{"
+       (group (+ (in alphanumeric "_-")))
+       "}}")
    (lambda (m)
      (let* ((expansion (match-string 1 m))
             (var (intern expansion))
@@ -1333,7 +1427,7 @@ All, any or none of these keys may be specified.
           (cond
            ((bufferp source)
             source)
-           ((string-match "^\\(./\\|/\\|~\\).*" source)
+           ((string-match (rx bol (or "/" "~") (* any)) source)
             (creole/get-file source))
            (t
             (with-current-buffer (generate-new-buffer "* creole-source *")
