@@ -41,6 +41,11 @@ broken over lines]]"))))
              (list link-thing)))
       (should (equal (creole-link-parse "ThisThing")
                      "<a href='ThisThing.creole'>ThisThing</a>"))
+      ;; make sure we do NOT escape if creole-oddmuse-on is nil
+      (should
+       (equal
+          (creole-link-parse "!OtherLongerThing")
+          "<a href='ThisThing.creole'>!OtherLongerThing</a>"))
       (let ((link-thing "OtherLongerThing.creole"))
         (should
          (equal
@@ -55,7 +60,11 @@ broken over lines]]"))))
           (should
            (equal
             (creole-link-parse "[OtherLongerThing]")
-            "<a href='OtherLongerThing.creole'>OtherLongerThing</a>")))))))
+            "<a href='OtherLongerThing.creole'>OtherLongerThing</a>"))
+          (should
+           (equal
+            (creole-link-parse "!UnescapedThing")
+            "UnescapedThing")))))))
 
 (ert-deftest creole-link-parse-resolver ()
   (let ((creole-link-resolver-fn 'creole/link-resolve))
