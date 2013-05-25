@@ -504,14 +504,14 @@ difficult."
      (equal
       (creole/heading->html
        '(heading1 "this is a test"))
-      "<a id='this-is-a-test'/>\n<h1>this is a test</h1>\n")))
+      "<a id='this-is-a-test'></a>\n<h1>this is a test</h1>\n")))
   (let ((creole-oddmuse-on nil)
         (creole-do-anchor-headings t))
     (should
      (equal
       (creole/heading->html
        '(heading1 "this is a test"))
-      "<a id='this-is-a-test'/>\n<h1>this is a test</h1>\n"))))
+      "<a id='this-is-a-test'></a>\n<h1>this is a test</h1>\n"))))
 
 (ert-deftest creole-html-with-links ()
   (with-temp-buffer
@@ -528,7 +528,7 @@ and **bold** and //italics//.\n\n")
       (should
        (equal
         htmlstr
-        "<a id='Heading!'/>
+        "<a id='Heading!'></a>
 <h1>Heading!</h1>
 <p>This is a paragraph.</p>
 <p>This is a paragraph <code>with code</code> and <a href='links'>links</a>
@@ -605,7 +605,7 @@ html>>
     (let ((html (creole-html (current-buffer))))
       (with-current-buffer html
         (goto-char (point-min))
-        (should (looking-at "<a id='Heading'/>
+        (should (looking-at "<a id='Heading'></a>
 <h1>Heading</h1>
 <P>This is a paragraph of text</P>"))))))
 
@@ -692,9 +692,9 @@ html>>
       (should 
        (equal
         (with-current-buffer html (buffer-string))
-        "<a id='Heading!'/>
+        "<a id='Heading!'></a>
 <h1>Heading!</h1>
-<a id='Heading2!'/>
+<a id='Heading2!'></a>
 <h2>Heading2!</h2>
 <ol>
 <li>an ordered list item<ol>
@@ -702,7 +702,7 @@ html>>
 </ol>
 </li>
 </ol>
-<a id='Heading3-is-a-multi-word-heading'/>
+<a id='Heading3-is-a-multi-word-heading'></a>
 <h2>Heading3 is a multi word heading</h2>
 <pre>
 == this is preformatted ==
@@ -885,7 +885,7 @@ This is a nice simple Creole Wiki file.
             (buffer-substring-no-properties (point-min) (point-max))
             "<html>
 <body>
-<a id='A-Creole-Wiki-file'/>
+<a id='A-Creole-Wiki-file'></a>
 <h1>A Creole Wiki file</h1>
 <p>This is a nice simple Creole Wiki file.</p>
 </body>
@@ -968,7 +968,7 @@ This is a Creole document with some stuff in it.
 "
     "<html>
 <body>
-<a id='A-Creole-Document'/>
+<a id='A-Creole-Document'></a>
 <h1>A Creole Document</h1>
 <p>This is a Creole document with some stuff in it.</p>
 </body>
@@ -985,7 +985,7 @@ This is a Creole document with some stuff in it.
     "<html>
 <body>
 <div id='header'>the header</div>
-<a id='A-Creole-Document'/>
+<a id='A-Creole-Document'></a>
 <h1>A Creole Document</h1>
 <p>This is a Creole document with some stuff in it.</p>
 <div id='footer'>the footer</div>
@@ -1000,13 +1000,13 @@ This is a Creole document with some stuff in it.
   (flet ((creole/file-under-root-p
           (file-name root)
           "/styles.css"))
-    (let (creole-do-anchor-headings))
-    (creole/wiki-test
-      "= A Creole Document =
+    (let (creole-do-anchor-headings)
+      (creole/wiki-test
+          "= A Creole Document =
 
 This is a Creole document with some stuff in it.
 "
-    "<html>
+          "<html>
 <head>
 <title>A Creole Document</title>
 <link rel='stylesheet' href='/styles.css' type='text/css'/>
@@ -1017,8 +1017,8 @@ This is a Creole document with some stuff in it.
 </body>
 </html>
 "
-    :docroot "~/elwikicreole/"
-    :css '("~/elwikicreole/styles.css"))))
+        :docroot "~/elwikicreole/"
+        :css '("~/elwikicreole/styles.css")))))
 
 (ert-deftest creole-wiki-css-embed ()
   "Test that strings are embedded for CSS when necessary."

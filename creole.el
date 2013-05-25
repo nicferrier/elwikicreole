@@ -834,7 +834,7 @@ an anchor is added automatically."
      (if (or creole-oddmuse-on
              creole-do-anchor-headings)
          (format
-          "<a id='%s'/>\n"
+          "<a id='%s'></a>\n"
           (creole/heading-text->id h-text)) "") ; else
      level h-text level)))
 
