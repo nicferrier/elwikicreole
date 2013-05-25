@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.9.20130507
+;; Version: 0.9.20130525
 ;; Package-requires: ((el-x "0.2.1"))
 ;; Keywords: lisp, creole, wiki
 
