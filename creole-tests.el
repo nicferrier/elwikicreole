@@ -2,21 +2,21 @@
 
 (require 'creole)
 (require 'ert)
-(require 'cl)
+(require 'noflet)
 
 (ert-deftest creole/link-resolve ()
   "Test simple resolution."
   (should
    (equal
     "test.creole"
-    (flet ((directory-files (dir &optional full match nosort)
-             (list "test.creole")))
+    (noflet ((directory-files (dir &optional full match nosort)
+               (list "test.creole")))
       (creole/link-resolve "test"))))
   (should
    (equal
     "test"
-    (flet ((directory-files (dir &optional full match nosort)
-             (list)))
+    (noflet ((directory-files (dir &optional full match nosort)
+               (list)))
       (creole/link-resolve "test")))))
 
 (ert-deftest creole-link-parse ()
@@ -37,8 +37,8 @@ broken over lines]]"))))
                    "ThisThing")))
   (let ((creole-link-resolver-fn 'creole/link-resolve)
         (link-thing "ThisThing.creole"))
-    (flet ((directory-files (dir &optional full match nosort)
-             (list link-thing)))
+    (noflet ((directory-files (dir &optional full match nosort)
+               (list link-thing)))
       (should (equal (creole-link-parse "ThisThing")
                      "<a href='ThisThing.creole'>ThisThing</a>"))
       ;; make sure we do NOT escape if creole-oddmuse-on is nil
@@ -68,22 +68,22 @@ broken over lines]]"))))
 
 (ert-deftest creole-link-parse-resolver ()
   (let ((creole-link-resolver-fn 'creole/link-resolve))
-    (flet ((directory-files (dir &optional full match nosort)
-             (list "thing.creole")))
+    (noflet ((directory-files (dir &optional full match nosort)
+               (list "thing.creole")))
       (should
        (equal "<a href='thing.creole'>thing</a>"
               (creole-link-parse "[[thing]]"))))
-    (flet ((directory-files (dir &optional full match nosort)
+    (noflet ((directory-files (dir &optional full match nosort)
              (list "ThisThing.creole")))
       (should
        (equal "<a href='ThisThing.creole'>ThisThing</a>"
               (creole-link-parse "ThisThing"))))
-    (flet ((directory-files (dir &optional full match nosort)
+    (noflet ((directory-files (dir &optional full match nosort)
              (list "ThisThing.creole")))
       (should
        (equal "<a href='http://blah/blah'>blah</a>"
               (creole-link-parse "[[http://blah/blah|blah]]"))))
-    (flet ((directory-files (dir &optional full match nosort)
+    (noflet ((directory-files (dir &optional full match nosort)
              (list "ThisThing.creole")))
       (should
        (equal "<a href='ThisThing.creole'>blah</a>"
@@ -123,7 +123,7 @@ broken over lines]]")))))
   (let ((creole-link-resolver-fn
          (lambda (name)
            (concat name ".jpg"))))
-    (flet ((directory-files (dir &optional full match nosort)
+    (noflet ((directory-files (dir &optional full match nosort)
              (list "thing.jpg")))
       (should
        (equal (creole-image-parse "{{thing}}")
@@ -239,19 +239,18 @@ and **bold** and //italics//.")))))
 
 (ert-deftest creole-tokenize-lisp ()
   "Test the new embedded lisp stuff"
-  (flet ((my-plugin
-          () ; arg list
-          "== Plugin Heading! ==
+  (flet ((my-plugin () ; arg list
+           "== Plugin Heading! ==
 This is a paragraph {{{with code}}} and [[links]]"))
-        (with-temp-buffer
-          (insert "= Heading! =\n")
-          (insert "\n<<(\n(my-plugin)\n)>>\n")
-          (should
-           (equal
-            (creole-tokenize (current-buffer))
-            '((heading1 . "Heading!")
-              (heading2 . "Plugin Heading!")
-              (para . "This is a paragraph {{{with code}}} and [[links]]")))))))
+    (with-temp-buffer
+      (insert "= Heading! =\n")
+      (insert "\n<<(\n(my-plugin)\n)>>\n")
+      (should
+       (equal
+        (creole-tokenize (current-buffer))
+        '((heading1 . "Heading!")
+          (heading2 . "Plugin Heading!")
+          (para . "This is a paragraph {{{with code}}} and [[links]]")))))))
 
 (ert-deftest creole-tokenize-plugin-html ()
   "Test the embedded HTML stuff"
@@ -750,12 +749,12 @@ and <strong>bold</strong> and <em>italics</em>.</p>
     (let ((file-buffer (current-buffer)))
       ;; Mock both these functions to cause the buffer 'file-buffer'
       ;; to be returned from creole/get-file
-      (flet ((creole/file-under-root-p
-                 (file-name root)
-               nil)
-             (creole/get-file
-                 (filename)
-               file-buffer))
+      (noflet ((creole/file-under-root-p
+                   (file-name root)
+                 nil)
+               (creole/get-file
+                   (filename)
+                 file-buffer))
         (should (equal
                  (cons :string "= A very small creole file =\n")
                  (creole/expand-item-value
@@ -772,27 +771,26 @@ and <strong>bold</strong> and <em>italics</em>.</p>
 
 (ert-deftest creole/expand-item-value-safe-file ()
   "Test that a file under the docroot is returned as just a file."
-  (flet ((creole/file-under-root-p
-          (file-name root)
-          ;; TODO - implementation
-          "/README.creole"))
-        (should (equal
-                 (cons :link "/README.creole")
-                 (creole/expand-item-value
-                  "~/elwikicreole/README.creole"
-                  "~/elwikicreole/")))))
+  (noflet ((creole/file-under-root-p
+               (file-name root)
+             ;; TODO - implementation
+             "/README.creole"))
+    (should (equal
+             (cons :link "/README.creole")
+             (creole/expand-item-value
+              "~/elwikicreole/README.creole"
+              "~/elwikicreole/")))))
 
 (ert-deftest creole/expand-item-value-null-file ()
   ;; Should be an empty :link
-  (flet ((creole/file-under-root-p
-          (file-name root)
-          ;; TODO - implementation
-          nil))
-        (should (equal
-                 (cons :link "/__not__there__.creole")
-                 (creole/expand-item-value
-                  "/__not__there__.creole"
-                  "~/elwikicreole/")))))
+  (noflet ((creole/file-under-root-p (file-name root)
+             ;; TODO - implementation
+             nil))
+    (should (equal
+             (cons :link "/__not__there__.creole")
+             (creole/expand-item-value
+              "/__not__there__.creole"
+              "~/elwikicreole/")))))
 
 (ert-deftest creole/expand-item-value-unsafe-file ()
   ;; Supply a filename but get back the expanded string
@@ -804,19 +802,19 @@ and <strong>bold</strong> and <em>italics</em>.</p>
            " *creole-expand-item-value-unsafe-file*"))))
     (with-current-buffer TMPBUF
       (insert "= A very small Creole document =\n"))
-    (flet
+    (noflet
         ((creole/file-under-root-p
-          (file-name root)
-          nil)
+             (file-name root)
+           nil)
          (file-truename
-          (file-name)
-          TEST-FILE-NAME)
+             (file-name)
+           TEST-FILE-NAME)
          (file-exists-p
-          (file-name)
-          (equal file-name TEST-FILE-NAME))
+             (file-name)
+           (equal file-name TEST-FILE-NAME))
          (find-file-noselect
-          (file-name)
-          TMPBUF))
+             (file-name)
+           TMPBUF))
       (should
        (equal
         (cons :string "= A very small Creole document =\n")
@@ -881,9 +879,9 @@ int main(char **argv, int argc)
 This is a nice simple Creole Wiki file.
 ")
     (let ((creole-file-buffer (current-buffer)))
-      (flet ((creole/get-file
-              (filename)
-              creole-file-buffer))
+      (noflet ((creole/get-file
+                   (filename)
+                 creole-file-buffer))
         (with-temp-buffer
           (creole-wiki
            "~/anyfilename"
@@ -1006,9 +1004,8 @@ This is a Creole document with some stuff in it.
 
 (ert-deftest creole-wiki-css-link ()
   "Test that a CSS under the docroot is linked not embedded."
-  (flet ((creole/file-under-root-p
-          (file-name root)
-          "/styles.css"))
+  (noflet ((creole/file-under-root-p (file-name root)
+             "/styles.css"))
     (let (creole-do-anchor-headings)
       (creole/wiki-test
           "= A Creole Document =
@@ -1031,9 +1028,8 @@ This is a Creole document with some stuff in it.
 
 (ert-deftest creole-wiki-css-embed ()
   "Test that strings are embedded for CSS when necessary."
-  (flet ((creole/file-under-root-p
-          (file-name root)
-          "/styles.css"))
+  (noflet ((creole/file-under-root-p (file-name root)
+             "/styles.css"))
     (let (creole-do-anchor-headings)
       ;; Test a string specified as the CSS is embedded
       (creole/wiki-test
@@ -1071,12 +1067,10 @@ font-size: 8pt;
       ;; Mock the 2 functions so that the file is not considered under
       ;; the docroot and so that it's contents if the CSS fragment
       ;; above
-      (flet ((creole/file-under-root-p
-              (file-name root)
-              nil)
-             (creole/get-file
-              (filename)
-              css-file-buffer))
+      (noflet ((creole/file-under-root-p (file-name root)
+                 nil)
+               (creole/get-file (filename)
+                 css-file-buffer))
         (creole/wiki-test
           "= A Creole Document =
 
@@ -1102,9 +1096,8 @@ P { background: blue; }
     :css '("~/someplace/styles.css"))))))
 
 (ert-deftest creole-wiki-js ()
-  (flet ((creole/file-under-root-p
-             (file-name root)
-           "/scripts.js"))
+  (noflet ((creole/file-under-root-p (file-name root)
+             "/scripts.js"))
     (let (creole-do-anchor-headings)
       (creole/wiki-test
           "= A Creole Document =
@@ -1154,24 +1147,22 @@ doSomething();
 ")))))
 
 (ert-deftest creole-directory-list ()
-  (flet ((directory-files
-          (directory-name)
-          '("." ".." "file1.html" "file2.html"))
-         (file-attributes
-          (file-name)
-          (let ((t1 (encode-time 0 32 9 1 12 2011))
-                (t2 (encode-time 0 22 9 1 12 2011)))
-            (cond
-             ((string-match-p ".*/file1.html" file-name)
-              `(nil 1 "uid" "grp"
-                    ,t1 ,t1 ,t1
-                    200 "-rwxrwxrwx-" t
-                    1333331114234 0))
-             ((string-match-p ".*/file2.html" file-name)
-              `(nil 1 "uid" "grp"
-                    ,t2 ,t2 ,t2
-                    157 "-rwxrwxrwx-" t
-                    1333331114234 0))))))
+  (noflet ((directory-files (directory-name)
+           '("." ".." "file1.html" "file2.html"))
+           (file-attributes (file-name)
+             (let ((t1 (encode-time 0 32 9 1 12 2011))
+                   (t2 (encode-time 0 22 9 1 12 2011)))
+               (cond
+                 ((string-match-p ".*/file1.html" file-name)
+                  `(nil 1 "uid" "grp"
+                        ,t1 ,t1 ,t1
+                        200 "-rwxrwxrwx-" t
+                        1333331114234 0))
+                 ((string-match-p ".*/file2.html" file-name)
+                  `(nil 1 "uid" "grp"
+                        ,t2 ,t2 ,t2
+                        157 "-rwxrwxrwx-" t
+                        1333331114234 0))))))
     (should
      (equal
       (creole-directory-list "~/mydirectory")

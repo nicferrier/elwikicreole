@@ -6,7 +6,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
 ;; Version: 0.9.20130525
-;; Package-requires: ((el-x "0.2.1"))
+;; Package-requires: ((noflet "0.0.2"))
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -44,7 +44,7 @@
 (require 'htmlfontify)
 (require 'org-table)
 (require 'rx)
-(require 'dflet)
+(require 'noflet)
 (require 'cl)
 
 (defgroup creole nil
@@ -737,17 +737,17 @@ possible to use the `cadr' of the style to add colors."
             ;; behaviour - no header, no footer and the styles list is
             ;; captured rather than written out.
             (let (css-list)
-              (flet ((hfy-sprintf-stylesheet (css file)
-                       (setq css-list css)
-                       ""))
+              (noflet ((hfy-sprintf-stylesheet
+                        (css file)
+                        (setq css-list css)
+                        ""))
                 (let ((hfy-display-class '((type x-toolkit)))
                       (hfy-page-footer (lambda (&optional file-name) "" "")))
                   (let (result
                         (htmlbuf
-                         (flet
-                             ;; htmlfontify has annoying messages in it.
-                             ((message (format-str &rest args) t))
-                           (htmlfontify-buffer))))
+                         (noflet
+                             ((message (format-str &rest args) t)) ; htmlfontify has annoying messages in it.
+                             (htmlfontify-buffer))))
                     (with-current-buffer htmlbuf
                       ;; FIXME we should add another property
                       ;; detailing which mode we're dealing with-
