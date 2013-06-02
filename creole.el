@@ -5,8 +5,8 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 0.9.20130525
-;; Package-requires: ((noflet "0.0.2"))
+;; Version: 0.9.20130602
+;; Package-requires: ((noflet "0.0.3"))
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
