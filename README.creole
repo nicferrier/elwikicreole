@@ -221,3 +221,20 @@ program specific lookup function, easy for EmacsLisp, maybe harder for
 Java).
 
 To achieve this we could just have more hooks in the conversion.
+
+== To do ==
+
+There are things that people could help with on creole. Here's a list
+of my next priorities:
+
+* make the block parsing routines more abstract
+** {{{creole-block-parse}}}
+** {{{creole-image-parse}}}
+** {{{creole-link-parse}}}
+** all are fixed to HTML output, they need to be abstracted to allow other transformations
+* add url scheme abstraction
+** so that code can be written by users to handle different url schemes
+*** {{{internal:filename}}} might be implemented as an internal include
+*** {{{youtube:WcUwCsAhWMk}}} might be implemented as a youtube embed
+** implementation notes
+*** the functions to do this will need to indicate their return data?
