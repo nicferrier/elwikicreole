@@ -126,52 +126,53 @@ single element links are passed through it.  This variable also
 turns on CamelCase linking."
   (if (and creole-oddmuse-on (string-match-p (rx bol "!") text))
       (replace-regexp-in-string (rx bol "!") "" text t)
-    (let* ((resolvable-link
-            (if (functionp creole-link-resolver-fn)
-                (let* ((case-fold-search nil)) ; do CamelCaps links
-                  (replace-regexp-in-string
-                   (rx
-                    (or buffer-start bol bos)
-                    (group
-                     (? (not (any "[")))
-                     (group
-                      (>= 2 (and (any upper)
-                                 (one-or-more (any lower)))))))
-                   (lambda (m)
-                     (let ((link (match-string 1 m)))
-                       (format
-                        "<a href='%s'>%s</a>"
-                        (funcall creole-link-resolver-fn link)
-                        link))) text t))
-              ;; Else just use the text
-              text))
-           (real-creole
-            (replace-regexp-in-string
-             (rx "[["
-                 (group
-                  (* (group (or "ftp" "http" "mailto") ":"))
-                  (+ (not (any "]|"))))
-                 (*
+      ;; Else it's not an escaped link
+      (let* ((resolvable-link
+              (if (functionp creole-link-resolver-fn)
+                  (let* ((case-fold-search nil)) ; do CamelCaps links
+                    (replace-regexp-in-string
+                     (rx
+                      (or buffer-start bol bos)
+                      (group
+                       (? (not (any "[")))
+                       (group
+                        (>= 2 (and (any upper)
+                                   (one-or-more (any lower)))))))
+                     (lambda (m)
+                       (let ((link (match-string 1 m)))
+                         (format
+                          "<a href='%s'>%s</a>"
+                          (funcall creole-link-resolver-fn link)
+                          link))) text t))
+                  ;; Else just use the text
+                  text))
+             (real-creole
+              (replace-regexp-in-string
+               (rx "[["
+                   (group
+                    (* (group (or "ftp" "http" "mailto") ":"))
+                    (+ (not (any "]|"))))
+                   (*
                   (group
                    "|" (group (group (+ (not (any "]")))))))
-                 "]]")
-             'creole/link-replacer
-             resolvable-link))
-           (oddmuse
-            (when creole-oddmuse-on
-              (replace-regexp-in-string
-               (rx "["
-                   (group
-                    (* (group (and (+ (in alpha))) ":"))
-                    (+ (not (any "]| "))))
-                   (* (group
-                       (any "| ")
-                       (group (group (+ (not (any ?\])))))))
-                   "]")
+                   "]]")
                'creole/link-replacer
-               real-creole)))
-           (bracket-resolved (if oddmuse oddmuse real-creole)))
-      bracket-resolved)))
+               resolvable-link))
+             (oddmuse
+              (when creole-oddmuse-on
+                (replace-regexp-in-string
+                 (rx "["
+                     (group
+                      (* (group (and (+ (in alpha))) ":"))
+                      (+ (not (any "]| "))))
+                     (* (group
+                         (any "| ")
+                         (group (group (+ (not (any ?\])))))))
+                     "]")
+                 'creole/link-replacer
+                 real-creole)))
+             (bracket-resolved (if oddmuse oddmuse real-creole)))
+        bracket-resolved)))
 
 (defvar creole-image-class nil
   "A default class to be applied to wiki linked images.")
