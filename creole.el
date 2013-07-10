@@ -143,7 +143,8 @@ turns on CamelCase linking."
                          (format
                           "<a href='%s'>%s</a>"
                           (funcall creole-link-resolver-fn link)
-                          link))) text t))
+                          link)))
+                     text t))
                   ;; Else just use the text
                   text))
              (real-creole
