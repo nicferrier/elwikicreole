@@ -107,6 +107,28 @@ broken over lines</a>"
                    (creole-link-parse "[[thing|thing
 broken over lines]]")))))
 
+(ert-deftest creole-image-resolve ()
+  "Test that the `creole-image-parse' gives the right match data."
+  (let (match-strings)
+    (noflet ((creole-image-resolve (m)
+               (setq match-strings
+                     (loop for i from 0 to 5 collect (match-string i m)))
+               "<img src=\"dummy\"></img>"))
+      (creole-image-parse "{{something?width=100|some text to finish}}")
+      (should (equal (elt match-strings 1) "something"))
+      (should (equal (elt match-strings 3) "width=100"))
+      (should (equal (elt match-strings 5) "some text to finish"))
+      ;; Test without the query
+      (creole-image-parse "{{something|some text to finish}}")
+      (should (equal (elt match-strings 1) "something"))
+      (should (equal (elt match-strings 3) nil))
+      (should (equal (elt match-strings 5) "some text to finish"))
+      ;; Test without the description
+      (creole-image-parse "{{something}}")
+      (should (equal (elt match-strings 1) "something"))
+      (should (equal (elt match-strings 3) nil))
+      (should (equal (elt match-strings 5) nil)))))
+
 (ert-deftest creole-image-parse ()
   (should (equal "<img src='image.jpg' alt='whatever I tell you' title='whatever I tell you' width='20' height='1000' />"
                  (creole-image-parse "{{image.jpg?size=20x1000|whatever I tell you}}")))

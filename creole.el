@@ -178,6 +178,56 @@ turns on CamelCase linking."
 (defvar creole-image-class nil
   "A default class to be applied to wiki linked images.")
 
+(defun creole/image->html (m)
+  "Convert image urls to HTML."
+  (let (title)
+    (apply
+     'format
+     (append
+      '("<img %ssrc='%s' alt='%s' %s%s/>")
+      (list
+       ;; Whether we have a class to apply or not
+       (if creole-image-class (format "class='%s' " creole-image-class) "")
+       ;; URL of the image
+       (if (functionp creole-link-resolver-fn)
+           (funcall creole-link-resolver-fn (match-string 1 m))
+           ;; Else
+           (match-string 1 m))
+       ;; if we don't have an alternate, use the URL
+       (if (match-string 4 m)
+           (setq title (match-string 5 m))
+           (match-string 1 m))
+       ;; title
+       (if title (format "title='%s' " title) "")
+       ;; Match only the size part for now
+       (if (match-string 2 m)
+           (let ((options (match-string 3 m)))
+             (save-match-data
+               ;; 'size=' is optional and is the only parameter right now
+               (string-match
+                (rx (group (+ digit))
+                    (? (group (and ?x (group (+ digit))))))
+                options)
+               (when (match-string 1 options)
+                 (concat
+                  "width='" (match-string 1 options) "' "
+                  (when (match-string 2 options)
+                    (concat "height='" (match-string 3 options) "' "))))))
+           ""))))))
+
+(defun creole-image-resolve (m)
+  "Resolve M, a match object, into HTML.
+
+M comes from `creole-image-parse' and has the following groups:
+
+ 1 the url part
+ 2 the query part with the leading \"?\"
+ 3 the query part without the \"?\"
+ 4 the description part with the leading \"|\"
+ 5 the description part without the leading \"|\"
+"
+  (creole/image->html m))
+
 (defun creole-image-parse (text)
   "Parse TEXT for creole images.
 
@@ -200,41 +250,7 @@ If defined then `creole-link-resolver-fn' is used for links."
        (* (group "?" (group (+ (not (any "?|}"))))))
        (? (group "|" (group (+ (not (any "}"))))))
        "}}")
-   (lambda (m)
-     (let (title)
-       (apply
-        'format
-        (append
-         '("<img %ssrc='%s' alt='%s' %s%s/>")
-         (list
-          ;; Whether we have a class to apply or not
-          (if creole-image-class (format "class='%s' " creole-image-class) "")
-          ;; URL of the image
-          (if (functionp creole-link-resolver-fn)
-              (funcall creole-link-resolver-fn (match-string 1 m))
-              ;; Else
-              (match-string 1 m))
-          ;; if we don't have an alternate, use the URL
-          (if (match-string 4 m)
-              (setq title (match-string 5 m))
-              (match-string 1 m))
-          ;; title
-          (if title (format "title='%s' " title) "")
-          ;; Match only the size part for now
-          (if (match-string 2 m)
-              (let ((options (match-string 3 m)))
-                (save-match-data
-                  ;; 'size=' is optional and is the only parameter right now
-                  (string-match
-                   (rx (group (+ digit))
-                       (? (group (and ?x (group (+ digit))))))
-                   options)
-                  (when (match-string 1 options)
-                    (concat
-                     "width='" (match-string 1 options) "' "
-                     (when (match-string 2 options)
-                       (concat "height='" (match-string 3 options) "' "))))))
-              ""))))))
+   'creole-image-resolve
    text))
 
 (defun creole-block-parse (text)
