@@ -6,7 +6,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
 ;; Version: 0.9.20130602
-;; Package-requires: ((noflet "0.0.3"))
+;; Package-requires: ((noflet "0.0.3")(kv "0.0.17"))
 ;; Keywords: lisp, creole, wiki
 
 ;; This file is NOT part of GNU Emacs.
@@ -46,6 +46,7 @@
 (require 'rx)
 (require 'noflet)
 (require 'cl)
+(require 'kv)
 
 (defgroup creole nil
   "A WikiCreole parser and associated tools."
