@@ -216,6 +216,20 @@ turns on CamelCase linking."
                     (concat "height='" (match-string 3 options) "' "))))))
            ""))))))
 
+(defvar creole-embed-handlers nil
+  "An a-list of scheme . handler-function pairs for handling embeds.
+
+The image syntax can be used to handle generic embedding, turning
+a URL into some generic output code.  Each url scheme that can be
+used to do that must be registered here.
+
+For example: youtube:TR7DPvEi7Jg could be returned as the embed
+HTML for that specific youtube video.
+
+Handlers should expect three arguments: the match data (as passed
+to `creole-image-resolve') and then the scheme and the path (the
+non-scheme part of the url).")
+
 (defun creole-image-resolve (m)
   "Resolve M, a match object, into HTML.
 
@@ -226,8 +240,34 @@ M comes from `creole-image-parse' and has the following groups:
  3 the query part without the \"?\"
  4 the description part with the leading \"|\"
  5 the description part without the leading \"|\"
-"
-  (creole/image->html m))
+
+The resolution uses `creole-embed-handlers' to attach handling
+logic to urls via url schemes.
+
+If no handler is found the embed is presumed to be an image and
+passed to `creole/image->html'."
+  (let ((md (match-data)))
+    ;; Match the url part for a scheme
+    (noflet ((matches (regex to-match)
+               (save-match-data
+                 (when (string-match regex to-match)
+                   (loop for i from 0 to (- (/ (length (match-data)) 2) 1)
+                      collect (match-string i to-match))))))
+      (let ((url (match-string 1 m)))
+        (destructuring-bind (&optional url scheme path)
+            (matches
+             (rx (group (+ (any "A-Za-z"))) ":"
+                 (group (+ anything)))
+             url)
+          ;; I do this because save-match-data doesn't seem to work.
+          (set-match-data md)
+          ;; Find whether we have a specific handler for scheme and then
+          ;; pass it path
+          (let ((handler-fn (kva scheme creole-embed-handlers)))
+            (if (functionp handler-fn)
+                (funcall handler-fn m scheme path)
+                ;; Else just call the image handler
+                (creole/image->html m))))))))
 
 (defun creole-image-parse (text)
   "Parse TEXT for creole images.

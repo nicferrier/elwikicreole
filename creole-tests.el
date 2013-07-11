@@ -142,6 +142,7 @@ broken over lines]]")))))
                  (creole-image-parse "{{image.jpg?size=20|alternate text}}")))
   (should (equal "<img src='image.jpg' alt='image.jpg' width='20' height='10' />"
                  (creole-image-parse "{{image.jpg?size=20x10}}")))
+  ;; Resolver testing
   (let ((creole-link-resolver-fn
          (lambda (name)
            (concat name ".jpg"))))
@@ -149,7 +150,17 @@ broken over lines]]")))))
              (list "thing.jpg")))
       (should
        (equal (creole-image-parse "{{thing}}")
-              "<img src='thing.jpg' alt='thing' />")))))
+              "<img src='thing.jpg' alt='thing' />"))))
+  ;; Embed handler testing
+  (let ((creole-embed-handlers
+         (list (cons "test"
+                     (lambda (m scheme path)
+                       (format
+                        "<object src=\"%s\"></object>"
+                        path))))))
+    (should
+     (equal "<object src=\"blah\"></object>"
+            (creole-image-parse "{{test:blah|whatever I tell you}}")))))
 
 (ert-deftest creole-block-parse ()
   "Test the block parsing routines."
