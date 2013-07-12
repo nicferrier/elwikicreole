@@ -216,6 +216,35 @@ turns on CamelCase linking."
                     (concat "height='" (match-string 3 options) "' "))))))
            ""))))))
 
+(defun creole-include-handler (match-data scheme path)
+  "Embed handler to handle \"include:file\" embeds.
+
+Add this to `creole-embed-hanndlers' (for example, for scheme
+\"include\") to support creole includes, for example:
+
+  = A document =
+  {{include:somecreolefile}}
+
+allows \"somecreolefile\" to be HTML rendered and embedded in the
+output of the main document.
+
+If `creole-link-resolver' is defined then link resolution is
+performed on PATH before loading.
+
+`creole-html' is used to render the HTML for the included file."
+  (let* ((file-path (if (functionp creole-link-resolver-fn)
+                        (funcall creole-link-resolver-fn path)
+                        ;; Else just the path
+                        path))
+         (creole-source (find-file-noselect file-path)))
+    (unwind-protect
+         (with-temp-buffer
+           (creole-html creole-source (current-buffer) :erase-existing t)
+           (buffer-string))
+      ;; tediously closes the buffer whatever, even if it was open already
+      (when (bufferp creole-source)
+        (kill-buffer creole-source)))))
+
 (defvar creole-embed-handlers nil
   "An a-list of scheme . handler-function pairs for handling embeds.
 
@@ -265,7 +294,8 @@ passed to `creole/image->html'."
           ;; pass it path
           (let ((handler-fn (kva scheme creole-embed-handlers)))
             (if (functionp handler-fn)
-                (funcall handler-fn m scheme path)
+                (save-match-data
+                  (funcall handler-fn m scheme path))
                 ;; Else just call the image handler
                 (creole/image->html m))))))))
 
