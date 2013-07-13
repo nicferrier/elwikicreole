@@ -258,6 +258,7 @@ will produce this HTML:
  <em>a nice video on emacs-lisp</em>
 
 The link resolver is not consulted to resolve the link."
+  ;; Just the youtube iframe thing
   (format "<iframe src=\"//www.youtube.com/embed/%s\"
 width=\"420\" height=\"315\"
 frameborder=\"0\" allowfullscreen></iframe>
