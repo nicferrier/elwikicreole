@@ -162,6 +162,18 @@ broken over lines]]")))))
      (equal "<object src=\"blah\"></object>"
             (creole-image-parse "{{test:blah|whatever I tell you}}")))))
 
+(ert-deftest creole-youtube-embed ()
+  "Test we can use `creole-youtube-handler'."
+  (let ((creole-embed-handlers '(("youtube" . creole-youtube-handler))))
+    (should
+     (equal
+      (creole-image-parse "{{youtube:WcUwCsAhWMk|a nice video on emacs-lisp}}")
+      "<iframe src=\"//www.youtube.com/embed/WcUwCsAhWMk\"
+width=\"420\" height=\"315\"
+frameborder=\"0\" allowfullscreen></iframe>
+<em>a nice video on emacs-lisp</em>"
+))))
+
 (ert-deftest creole-block-parse ()
   "Test the block parsing routines."
   (should (equal "<strong>this is bold</strong>"

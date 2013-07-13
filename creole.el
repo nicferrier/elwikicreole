@@ -235,15 +235,36 @@ performed on PATH before loading.
   (let* ((file-path (if (functionp creole-link-resolver-fn)
                         (funcall creole-link-resolver-fn path)
                         ;; Else just the path
-                        path))
-         (creole-source (find-file-noselect file-path)))
-    (unwind-protect
-         (with-temp-buffer
-           (creole-html creole-source (current-buffer) :erase-existing t)
-           (buffer-string))
-      ;; tediously closes the buffer whatever, even if it was open already
-      (when (bufferp creole-source)
-        (kill-buffer creole-source)))))
+                        path)))
+    (with-temp-buffer
+      (insert-file-contents-literally file-path)
+      (let ((creole-buffer (current-buffer)))
+        (with-temp-buffer
+          (creole-html creole-buffer (current-buffer) :erase-existing t)
+          (buffer-string))))))
+
+(defun creole-youtube-handler (m scheme path)
+  "Handle \"youtube\" scheme, turning it into an HTML embed.
+
+This creole:
+
+  {{youtube:WcUwCsAhWMk|a nice video on emacs-lisp}}
+
+will produce this HTML:
+
+ <iframe src=\"//www.youtube.com/embed/WcUwCsAhWMk\"
+         width=\"420\" height=\"315\"
+         frameborder=\"0\" allowfullscreen></iframe>
+ <em>a nice video on emacs-lisp</em>
+
+The link resolver is not consulted to resolve the link."
+  (format "<iframe src=\"//www.youtube.com/embed/%s\"
+width=\"420\" height=\"315\"
+frameborder=\"0\" allowfullscreen></iframe>
+%s" path
+(if (match-string 4 m)
+    (format "<em>%s</em>" (match-string 5 m))
+    "")))
 
 (defvar creole-embed-handlers nil
   "An a-list of scheme . handler-function pairs for handling embeds.
