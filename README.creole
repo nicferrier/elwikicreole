@@ -163,6 +163,29 @@ used to generate the link so that, if the resolver returns:
 This is intended to support real Wiki engines, like the EmacsWiki
 engine.
 
+=== Extended embed ===
+
+You can use the image syntax to embed things other than images. Use an
+embed handler function, which are called like:
+
+{{{
+(function match-data-object scheme path)
+}}}
+
+where the {{{match-data-object}}} has the following sub-matches:
+
+1 the url part
+2 the query part with the leading \"?\"
+3 the query part without the \"?\"
+4 the description part with the leading \"|\"
+5 the description part without the leading \"|\"
+
+Two examples embed handlers are:
+
+{{{creole-youtube-handler}}} and {{{creole-include-handler}}}. The
+former provides embed HTML code and the latter will include a whole
+other creole file as HTML.
+
 == API ==
 
 The code is designed to be reused in differing circumstances, it is split into:
