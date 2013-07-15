@@ -185,7 +185,7 @@ turns on CamelCase linking."
     (apply
      'format
      (append
-      '("<img %ssrc='%s' alt='%s' %s%s/>")
+      '("<img %ssrc='%s' alt='%s' %s%s></img>")
       (list
        ;; Whether we have a class to apply or not
        (if creole-image-class (format "class='%s' " creole-image-class) "")
