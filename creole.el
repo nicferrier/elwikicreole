@@ -1434,6 +1434,7 @@ PREDICATE is used to merge the properties."
 (defun* creole-wiki (source
                      &key
                      destination
+                     structure-transform-fn
                      (htmlfontify t)
                      (htmlfontify-style t)
                      body-header
@@ -1444,7 +1445,8 @@ PREDICATE is used to merge the properties."
                      css
                      javascript
                      meta
-                     other-link)
+                     other-link
+                     doctype)
   "Export WikiCreole SOURCE into HTML.
 
 Returns the buffer where the HTML was exported. This could be a
@@ -1469,6 +1471,8 @@ is sent to the default output stream when the export is done.
 
 The DESTINATION buffer is always returned.
 
+STRUCTURE-TRANSFORM-FN is a structure transformation function or
+list of functions, see `creole-html' for details.
 
 HTMLFONTIFY - use 'htmlfontify' to fontify any code blocks; this
 is true by default.
@@ -1538,6 +1542,11 @@ elements, for example:
 
  :other-link '(\"rel='alternate' href='/my-feed.rss'\")
 
+:DOCTYPE may be nil, in which case nothing is added or it may be
+a string in which case it is inserted directly before the <html>
+element, or it may be one of the symbols 'xhtml or 'html5 in
+which case the right doctype is added.
+
 All, any or none of these keys may be specified.
 "
   (interactive "fCreole file: ")
@@ -1563,7 +1572,9 @@ All, any or none of these keys may be specified.
             (get-buffer-create "*creole-html*")))))
 
     ;; Export the creole to the result buffer
-    (creole-html source-buffer html-buffer :do-font-lock htmlfontify)
+    (creole-html source-buffer html-buffer
+                 :do-font-lock htmlfontify
+                 :structure-transform-fn structure-transform-fn)
 
     ;; Now a bunch of other transformations on the result buffer
     (with-current-buffer html-buffer
@@ -1665,8 +1676,16 @@ All, any or none of these keys may be specified.
                        (creole-css-list-to-style-decl css)
                        "\n</style>\n"))))))
 
-        ;; Wrap the whole thing in the HTML tag
-        (creole/wrap-buffer-text "<html>\n" "</html>\n")))
+        ;; Wrap the whole thing in the DOCTYPE and the HTML tag
+        (creole/wrap-buffer-text
+         (cond
+           ((eq doctype 'html5) "<!DOCTYPE html>\n<html>")
+           ((eq doctype 'xhtml) "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"
+\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">
+<html xmlns=\"http://www.w3.org/1999/xhtml\">")
+           ((stringp doctype) (concat doctype "<html>"))
+           ((eq doctype nil) "<html>"))
+         "</html>\n")))
 
     ;; Should we output the whole thing to the default output stream?
     (when (eq destination t)
