@@ -185,10 +185,10 @@ turns on CamelCase linking."
     (apply
      'format
      (append
-      '("<img %ssrc='%s' alt='%s' %s%s></img>")
+      '("<img %ssrc=\"%s\" alt=\"%s\" %s%s></img>")
       (list
        ;; Whether we have a class to apply or not
-       (if creole-image-class (format "class='%s' " creole-image-class) "")
+       (if creole-image-class (format "class=\"%s\" " creole-image-class) "")
        ;; URL of the image
        (if (functionp creole-link-resolver-fn)
            (funcall creole-link-resolver-fn (match-string 1 m))
@@ -199,7 +199,7 @@ turns on CamelCase linking."
            (setq title (match-string 5 m))
            (match-string 1 m))
        ;; title
-       (if title (format "title='%s' " title) "")
+       (if title (format "title=\"%s\" " title) "")
        ;; Match only the size part for now
        (if (match-string 2 m)
            (let ((options (match-string 3 m)))
@@ -213,7 +213,7 @@ turns on CamelCase linking."
                  (concat
                   "width='" (match-string 1 options) "' "
                   (when (match-string 2 options)
-                    (concat "height='" (match-string 3 options) "' "))))))
+                    (format "height=\"%s\" " (match-string 3 options)))))))
            ""))))))
 
 (defun creole-include-handler (match-data scheme path)
