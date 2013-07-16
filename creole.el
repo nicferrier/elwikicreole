@@ -252,17 +252,20 @@ This creole:
 
 will produce this HTML:
 
- <iframe src=\"//www.youtube.com/embed/WcUwCsAhWMk\"
+ <div class=\"youtube\">
+   <iframe src=\"//www.youtube.com/embed/WcUwCsAhWMk\"
          width=\"420\" height=\"315\"
          frameborder=\"0\" allowfullscreen></iframe>
- <em>a nice video on emacs-lisp</em>
+   <em>a nice video on emacs-lisp</em>
+ </div>
 
 The link resolver is not consulted to resolve the link."
   ;; Just the youtube iframe thing
-  (format "<iframe src=\"//www.youtube.com/embed/%s\"
+  (format "<span class=\"youtube\"><iframe src=\"//www.youtube.com/embed/%s\"
 width=\"420\" height=\"315\"
 frameborder=\"0\" allowfullscreen></iframe>
-%s" path
+%s
+</span>" path
 (if (match-string 4 m)
     (format "<em>%s</em>" (match-string 5 m))
     "")))
