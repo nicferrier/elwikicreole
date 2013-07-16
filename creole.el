@@ -253,12 +253,12 @@ This creole:
 
 will produce this HTML:
 
- <div class=\"youtube\">
+ <span class=\"youtube\">
    <iframe src=\"//www.youtube.com/embed/WcUwCsAhWMk\"
          width=\"420\" height=\"315\"
          frameborder=\"0\" allowfullscreen></iframe>
    <em>a nice video on emacs-lisp</em>
- </div>
+ </span>
 
 The link resolver is not consulted to resolve the link."
   ;; Just the youtube iframe thing

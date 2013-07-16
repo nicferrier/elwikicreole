@@ -168,10 +168,11 @@ broken over lines]]")))))
     (should
      (equal
       (creole-image-parse "{{youtube:WcUwCsAhWMk|a nice video on emacs-lisp}}")
-      "<iframe src=\"//www.youtube.com/embed/WcUwCsAhWMk\"
+      "<span class=\"youtube\"><iframe src=\"//www.youtube.com/embed/WcUwCsAhWMk\"
 width=\"420\" height=\"315\"
 frameborder=\"0\" allowfullscreen></iframe>
-<em>a nice video on emacs-lisp</em>"
+<em>a nice video on emacs-lisp</em>
+</span>"
 ))))
 
 (ert-deftest creole-block-parse ()
