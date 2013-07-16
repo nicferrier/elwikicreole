@@ -1686,9 +1686,9 @@ All, any or none of these keys may be specified.
            ((eq doctype 'html5) "<!DOCTYPE html>\n<html>")
            ((eq doctype 'xhtml) "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"
 \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">
-<html xmlns=\"http://www.w3.org/1999/xhtml\">")
-           ((stringp doctype) (concat doctype "<html>"))
-           ((eq doctype nil) "<html>"))
+<html xmlns=\"http://www.w3.org/1999/xhtml\">\n")
+           ((stringp doctype) (concat doctype "<html>\n"))
+           ((eq doctype nil) "<html>\n"))
          "</html>\n")))
 
     ;; Should we output the whole thing to the default output stream?
