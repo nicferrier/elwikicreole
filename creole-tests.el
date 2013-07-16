@@ -130,17 +130,17 @@ broken over lines]]")))))
       (should (equal (elt match-strings 5) nil)))))
 
 (ert-deftest creole-image-parse ()
-  (should (equal "<img src='image.jpg' alt='whatever I tell you' title='whatever I tell you' width='20' height='1000' />"
+  (should (equal "<img src=\"image.jpg\" alt=\"whatever I tell you\" title=\"whatever I tell you\" width=\"20\" height=\"1000\" ></img>"
                  (creole-image-parse "{{image.jpg?size=20x1000|whatever I tell you}}")))
-  (should (equal "<img src='image.jpg' alt='image.jpg' />"
+  (should (equal "<img src=\"image.jpg\" alt=\"image.jpg\" ></img>"
                  (creole-image-parse "{{image.jpg}}")))
-  (should (equal "<img src='image.jpg' alt='alternate text' title='alternate text' />"
+  (should (equal "<img src=\"image.jpg\" alt=\"alternate text\" title=\"alternate text\" ></img>"
                  (creole-image-parse "{{image.jpg|alternate text}}")))
-  (should (equal "<img src='image.jpg' alt='image.jpg' width='20' />"
+  (should (equal "<img src=\"image.jpg\" alt=\"image.jpg\" width=\"20\" ></img>"
                  (creole-image-parse "{{image.jpg?size=20}}")))
-  (should (equal "<img src='image.jpg' alt='alternate text' title='alternate text' width='20' />"
+  (should (equal "<img src=\"image.jpg\" alt=\"alternate text\" title=\"alternate text\" width=\"20\" ></img>"
                  (creole-image-parse "{{image.jpg?size=20|alternate text}}")))
-  (should (equal "<img src='image.jpg' alt='image.jpg' width='20' height='10' />"
+  (should (equal "<img src=\"image.jpg\" alt=\"image.jpg\" width=\"20\" height=\"10\" ></img>"
                  (creole-image-parse "{{image.jpg?size=20x10}}")))
   ;; Resolver testing
   (let ((creole-link-resolver-fn
@@ -150,7 +150,7 @@ broken over lines]]")))))
              (list "thing.jpg")))
       (should
        (equal (creole-image-parse "{{thing}}")
-              "<img src='thing.jpg' alt='thing' />"))))
+              "<img src=\"thing.jpg\" alt=\"thing\" ></img>"))))
   ;; Embed handler testing
   (let ((creole-embed-handlers
          (list (cons "test"
