@@ -211,7 +211,8 @@ turns on CamelCase linking."
                 options)
                (when (match-string 1 options)
                  (concat
-                  "width='" (match-string 1 options) "' "
+                  (format
+                   "width=\"%s\" " (match-string 1 options))
                   (when (match-string 2 options)
                     (format "height=\"%s\" " (match-string 3 options)))))))
            ""))))))
