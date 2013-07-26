@@ -412,6 +412,65 @@ don't want the original buffer modified, or you don't have
 formulas in your tables (so recalculation is not necessary), you
 can change this value to nil.")
 
+(defun creole/org-table-row-parser (row-text)
+  "Split an org-table row into a list of cells."
+  (let* ((pairs (list (cons "//" "//")
+                      (cons "{{" "}}")
+                      (cons "[[" "]]")))
+         (cellstart 1)
+         (pt cellstart)
+         lst)
+    (catch :escape
+      (while t
+        (if (< pt (last-pos row-text))
+            (let* ((cell (substring row-text pt))
+                   (delim-pos (string-match
+                               (rx (group
+                                    (or "//" "{{" "[[" "|")))
+                               cell))
+                   (delim (match-string 1 cell)))
+              (if (equal delim "|")
+                  (progn
+                    (push
+                     (substring row-text cellstart
+                                (+ pt delim-pos))
+                     lst)
+                    (setq pt (setq cellstart (+ pt delim-pos 1))))
+                  ;; else it's got some formatting so skip it whatever it is
+                  (let* ((start (+ delim-pos (length delim)))
+                         (delim-end (kva delim pairs))
+                         (end (string-match
+                               (rx-to-string `(and ,delim-end) t)
+                               (substring cell start))))
+                    ;; and add it to l to find end point
+                    ;; and then search again
+                    (setq pt (+ pt (+ start end (length delim-end)))))))
+            ;; Else
+            (unless (equal cellstart pt)
+              (push (substring row-text cellstart pt) lst))
+            (throw :escape (reverse lst)))))))
+
+(defun creole/org-table-to-lisp (&optional txt)
+  "Convert the table at point to a Lisp structure.
+
+Replaces `org-table-to-lisp' with something that handles cells
+for creole better since a cell with a link in it would fail
+otherwise because creole uses the | as a link separator."
+  (unless txt
+    (unless (org-at-table-p)
+      (user-error "No table at point")))
+  (let* ((txt (or txt
+		  (buffer-substring-no-properties
+                   (org-table-begin)
+                   (org-table-end))))
+	 (lines (org-split-string txt "[ \t]*\n[ \t]*")))
+    (mapcar
+     (lambda (x)
+       (if (string-match org-table-hline-regexp x)
+	   'hline
+           (creole/org-table-row-parser x)))
+     lines)))
+
 (defun creole-tokenize (docbuf)
   "Parse DOCBUF which is full of creole wiki text.
 
@@ -467,7 +526,7 @@ Returns a list of parsed elements."
              (when creole-recalculate-org-tables
                ;; Requires that we're back in the table
                (org-table-recalculate t))
-             (let* ((tbl (org-table-to-lisp))
+             (let* ((tbl (creole/org-table-to-lisp))
                     (pt (org-table-end)))
                (setq res (append
                           res
@@ -751,10 +810,14 @@ We use `orgtbl-to-generic' to do this."
            :hlend "</tr></thead>"
            :hllstart "<thead><tr>\n"
            :hllend "</tr></thead>"
-           :hfmt "<th>%s</th>\n"
            :lstart "<tr>\n"
            :lend "</tr>"
            :hline nil
+           :hfmt (lambda (field)
+                  ;; Where we do block formatting
+                  (format
+                   "<th>%s</th>\n"
+                   (creole-block-parse field)))
            :fmt (lambda (field)
                   ;; Where we do block formatting
                   (format
