@@ -271,6 +271,47 @@ frameborder=\"0\" allowfullscreen></iframe>
     (format "<em>%s</em>" (match-string 5 m))
     "")))
 
+(defvar creole-summary-resolver nil
+  "Optional resolver function for article links from summaries.
+
+If set to a function of one argument, this is used by
+`creole-summary-handler' to resolve the path to the summary
+article into an article path.")
+
+(defun creole-summary-handler (m scheme path)
+  "Embed handler to handle \"summary:file\" embeds.
+
+Using this will let you pull in the first para of an article."
+  ;; This is not a very good summary handler
+  ;;
+  ;; what is SHOULD do is to take the elements up to and including the
+  ;; first para and then throw everything else away.
+  (let* ((file-path (if (functionp creole-link-resolver-fn)
+                        (funcall creole-link-resolver-fn path)
+                        ;; Else just the path
+                        path)))
+    (with-temp-buffer
+      (insert-file-contents-literally file-path)
+      (let* ((creole-buffer (current-buffer))
+             ;; We could cache the creole-structure?
+             (struct
+              (creole-structure (creole-tokenize creole-buffer)))
+             ;; cdar expects a para...need to change that
+             (summary (cdar struct))
+             (decorated (format "%s [[%s|... read more]]"
+                                summary
+                                path)))
+        (with-temp-buffer
+          (insert
+           (let ((creole-link-resolver-fn
+                  (lambda (path)
+                    (if (functionp creole-summary-resolver)
+                        (funcall creole-summary-resolver path)
+                        path))))
+             (creole-block-parse decorated)))
+          (buffer-string))))))
+
+
 (defvar creole-embed-handlers nil
   "An a-list of scheme . handler-function pairs for handling embeds.
 
