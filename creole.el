@@ -465,41 +465,43 @@ can change this value to nil.")
 
 (defun creole/org-table-row-parser (row-text)
   "Split an org-table row into a list of cells."
-  (let* ((pairs (list (cons "//" "//")
-                      (cons "{{" "}}")
-                      (cons "[[" "]]")))
-         (cellstart 1)
-         (pt cellstart)
-         lst)
-    (catch :escape
-      (while t
-        (if (< pt (last-pos row-text))
-            (let* ((cell (substring row-text pt))
-                   (delim-pos (string-match
-                               (rx (group
-                                    (or "//" "{{" "[[" "|")))
-                               cell))
-                   (delim (match-string 1 cell)))
-              (if (equal delim "|")
-                  (progn
-                    (push
-                     (substring row-text cellstart
-                                (+ pt delim-pos))
-                     lst)
-                    (setq pt (setq cellstart (+ pt delim-pos 1))))
-                  ;; else it's got some formatting so skip it whatever it is
-                  (let* ((start (+ delim-pos (length delim)))
-                         (delim-end (kva delim pairs))
-                         (end (string-match
-                               (rx-to-string `(and ,delim-end) t)
-                               (substring cell start))))
-                    ;; and add it to l to find end point
-                    ;; and then search again
-                    (setq pt (+ pt (+ start end (length delim-end)))))))
-            ;; Else
-            (unless (equal cellstart pt)
-              (push (substring row-text cellstart pt) lst))
-            (throw :escape (reverse lst)))))))
+  (noflet ((last-pos (text) ;; find the last |
+             (string-match "|[ \n]*$" text)))
+    (let* ((pairs (list (cons "//" "//")
+                        (cons "{{" "}}")
+                        (cons "[[" "]]")))
+           (cellstart 1)
+           (pt cellstart)
+           lst)
+      (catch :escape
+        (while t
+          (if (< pt (last-pos row-text))
+              (let* ((cell (substring row-text pt))
+                     (delim-pos (string-match
+                                 (rx (group
+                                      (or "//" "{{" "[[" "|")))
+                                 cell))
+                     (delim (match-string 1 cell)))
+                (if (equal delim "|")
+                    (progn
+                      (push
+                       (substring row-text cellstart
+                                  (+ pt delim-pos))
+                       lst)
+                      (setq pt (setq cellstart (+ pt delim-pos 1))))
+                    ;; else it's got some formatting so skip it whatever it is
+                    (let* ((start (+ delim-pos (length delim)))
+                           (delim-end (kva delim pairs))
+                           (end (string-match
+                                 (rx-to-string `(and ,delim-end) t)
+                                 (substring cell start))))
+                      ;; and add it to l to find end point
+                      ;; and then search again
+                      (setq pt (+ pt (+ start end (length delim-end)))))))
+              ;; Else
+              (unless (equal cellstart pt)
+                (push (substring row-text cellstart pt) lst))
+              (throw :escape (reverse lst))))))))
 
 (defun creole/org-table-to-lisp (&optional txt)
   "Convert the table at point to a Lisp structure.
