@@ -244,6 +244,16 @@ performed on PATH before loading.
           (creole-html creole-buffer (current-buffer) :erase-existing t)
           (buffer-string))))))
 
+(defvar creole-youtube-handler-width 420
+  "The width that will be used for youtube videos.
+
+Note that not all widths are possible.")
+
+(defvar creole-youtube-handler-height 315
+  "The height that will be used for youtube videos.
+
+Note that not all heights are possible.")
+
 (defun creole-youtube-handler (m scheme path)
   "Handle \"youtube\" scheme, turning it into an HTML embed.
 
@@ -263,10 +273,10 @@ will produce this HTML:
 The link resolver is not consulted to resolve the link."
   ;; Just the youtube iframe thing
   (format "<span class=\"youtube\"><iframe src=\"//www.youtube.com/embed/%s\"
-width=\"420\" height=\"315\"
+width=\"%s\" height=\"%s\"
 frameborder=\"0\" allowfullscreen></iframe>
 %s
-</span>" path
+</span>" path creole-youtube-handler-width creole-youtube-handler-height
 (if (match-string 4 m)
     (format "<em>%s</em>" (match-string 5 m))
     "")))
