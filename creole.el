@@ -1076,7 +1076,7 @@ an anchor is added automatically."
                      &optional html-buffer
                      &key result-mode
                      (erase-existing t)
-                     do-font-lock
+                     (do-font-lock t)
                      switch-to
                      structure-transform-fn)
   "Export DOCBUF as HTML to HTML-BUFFER.
@@ -1094,7 +1094,8 @@ If ERASE-EXISTING is not nil then any existing content in the
 HTML-BUFFER is erased before rendering.  By default this is true.
 
 If DO-FONT-LOCK is not nil then any pre-formatted areas tested
-for fontification with `creole-htmlize/mode-func'.
+for fontification with `creole-htmlize/mode-func'.  It is `t' by
+default.
 
 If SWITCH-TO is not nil then the HTML-BUFFER is switched to when
 the export is done.
