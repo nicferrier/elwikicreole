@@ -48,6 +48,16 @@
 (require 'cl)
 (require 'kv)
 
+(defmacro when1 (expr &rest body)
+  "Evaluate BODY when EXPR but return EXPR."
+  (declare (debug (form &rest form))
+           (indent 1))
+  (let ((expr-val (make-symbol "expr-val")))
+    `(let ((,expr-val ,expr))
+       (when ,expr-val
+         ,@body)
+       ,expr-val)))
+
 (defgroup creole nil
   "A WikiCreole parser and associated tools."
   :group 'hypertext)
