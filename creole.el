@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 27th October 2011
-;; Version: 1.0.5
+;; Version: 1.0.6
 ;; Package-requires: ((noflet "0.0.3")(kv "0.0.17"))
 ;; Keywords: lisp, creole, wiki
 
@@ -937,6 +937,8 @@ logic."
                    'lisp-mode)))
       ((string-match-p (rx bol "#!/bin/" (+ lower) "sh" eol) text)
        (list nil 'shell-script-mode))
+      ((string-match-p (rx bol "-module(") text)
+       (list nil 'erlang-mode))
       (t (list nil text)))))
 
 (defun creole-htmlize-string (text)
